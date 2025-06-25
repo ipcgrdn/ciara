@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { AuthProvider } from "@/contexts/AuthContext";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -13,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Clara",
-  description: "Clara is a modern, intuitive, and user-friendly AI-powered document editor.",
+  title: "CLARA - AI-Powered Document Editor",
+  description: "긴 문서 작성을 위한 AI 어시스턴트. 논문, 보고서, 소설까지 완벽한 컨텍스트 이해로 함께 글을 써나가는 새로운 경험.",
 };
 
 export default function RootLayout({
@@ -27,7 +28,9 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        {children}
+        <AuthProvider>
+          {children}
+        </AuthProvider>
       </body>
     </html>
   );

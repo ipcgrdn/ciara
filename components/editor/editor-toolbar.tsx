@@ -1,13 +1,13 @@
-'use client'
+"use client";
 
-import { Editor } from '@tiptap/react'
-import { motion } from 'framer-motion'
-import { 
-  Bold, 
-  Italic, 
-  Strikethrough, 
-  Heading1, 
-  Heading2, 
+import { Editor } from "@tiptap/react";
+import { motion } from "framer-motion";
+import {
+  Bold,
+  Italic,
+  Strikethrough,
+  Heading1,
+  Heading2,
   Heading3,
   List,
   ListOrdered,
@@ -16,54 +16,78 @@ import {
   Undo,
   Redo,
   Type,
-  Palette
-} from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Separator } from '@/components/ui/separator'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
-import { cn } from '@/lib/utils'
+  PanelLeftOpen,
+  PanelRightOpen,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { cn } from "@/lib/utils";
 
 interface EditorToolbarProps {
-  editor: Editor
+  editor: Editor;
+  showOutline?: boolean;
+  showAiChat?: boolean;
+  onToggleOutline?: () => void;
+  onToggleAiChat?: () => void;
 }
 
 interface ToolbarButtonProps {
-  onClick: () => void
-  isActive?: boolean
-  disabled?: boolean
-  icon: React.ReactNode
-  tooltip: string
+  onClick: () => void;
+  isActive?: boolean;
+  disabled?: boolean;
+  icon: React.ReactNode;
+  tooltip: string;
 }
 
-function ToolbarButton({ onClick, isActive, disabled, icon, tooltip }: ToolbarButtonProps) {
+function ToolbarButton({
+  onClick,
+  isActive,
+  disabled,
+  icon,
+  tooltip,
+}: ToolbarButtonProps) {
   return (
     <TooltipProvider>
       <Tooltip>
         <TooltipTrigger asChild>
           <Button
-            variant={isActive ? "default" : "ghost"}
+            variant="ghost"
             size="sm"
             onClick={onClick}
             disabled={disabled}
             className={cn(
-              "h-8 w-8 p-0",
-              isActive && "bg-primary text-primary-foreground"
+              "h-8 w-8 p-0 backdrop-blur-sm border transition-all duration-200",
+              isActive
+                ? "bg-white/30 border-white/40 text-slate-800 shadow-sm"
+                : "bg-white/10 border-white/20 text-slate-600 hover:bg-white/20 hover:border-white/30"
             )}
           >
             {icon}
           </Button>
         </TooltipTrigger>
-        <TooltipContent>
+        <TooltipContent className="backdrop-blur-sm bg-white/90 border-white/20 text-slate-800">
           <p>{tooltip}</p>
         </TooltipContent>
       </Tooltip>
     </TooltipProvider>
-  )
+  );
 }
 
-export function EditorToolbar({ editor }: EditorToolbarProps) {
+export function EditorToolbar({
+  editor,
+  showOutline = true,
+  showAiChat = true,
+  onToggleOutline,
+  onToggleAiChat,
+}: EditorToolbarProps) {
   if (!editor) {
-    return null
+    return null;
   }
 
   const formatButtons = [
@@ -71,75 +95,75 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
       icon: <Bold className="h-4 w-4" />,
       tooltip: "Bold (Ctrl+B)",
       onClick: () => editor.chain().focus().toggleBold().run(),
-      isActive: editor.isActive('bold'),
+      isActive: editor.isActive("bold"),
     },
     {
       icon: <Italic className="h-4 w-4" />,
       tooltip: "Italic (Ctrl+I)",
       onClick: () => editor.chain().focus().toggleItalic().run(),
-      isActive: editor.isActive('italic'),
+      isActive: editor.isActive("italic"),
     },
     {
       icon: <Strikethrough className="h-4 w-4" />,
       tooltip: "Strikethrough",
       onClick: () => editor.chain().focus().toggleStrike().run(),
-      isActive: editor.isActive('strike'),
+      isActive: editor.isActive("strike"),
     },
     {
       icon: <Code className="h-4 w-4" />,
       tooltip: "Inline Code",
       onClick: () => editor.chain().focus().toggleCode().run(),
-      isActive: editor.isActive('code'),
+      isActive: editor.isActive("code"),
     },
-  ]
+  ];
 
   const headingButtons = [
     {
       icon: <Type className="h-4 w-4" />,
       tooltip: "Paragraph",
       onClick: () => editor.chain().focus().setParagraph().run(),
-      isActive: editor.isActive('paragraph'),
+      isActive: editor.isActive("paragraph"),
     },
     {
       icon: <Heading1 className="h-4 w-4" />,
       tooltip: "Heading 1",
       onClick: () => editor.chain().focus().toggleHeading({ level: 1 }).run(),
-      isActive: editor.isActive('heading', { level: 1 }),
+      isActive: editor.isActive("heading", { level: 1 }),
     },
     {
       icon: <Heading2 className="h-4 w-4" />,
       tooltip: "Heading 2",
       onClick: () => editor.chain().focus().toggleHeading({ level: 2 }).run(),
-      isActive: editor.isActive('heading', { level: 2 }),
+      isActive: editor.isActive("heading", { level: 2 }),
     },
     {
       icon: <Heading3 className="h-4 w-4" />,
       tooltip: "Heading 3",
       onClick: () => editor.chain().focus().toggleHeading({ level: 3 }).run(),
-      isActive: editor.isActive('heading', { level: 3 }),
+      isActive: editor.isActive("heading", { level: 3 }),
     },
-  ]
+  ];
 
   const listButtons = [
     {
       icon: <List className="h-4 w-4" />,
       tooltip: "Bullet List",
       onClick: () => editor.chain().focus().toggleBulletList().run(),
-      isActive: editor.isActive('bulletList'),
+      isActive: editor.isActive("bulletList"),
     },
     {
       icon: <ListOrdered className="h-4 w-4" />,
       tooltip: "Numbered List",
       onClick: () => editor.chain().focus().toggleOrderedList().run(),
-      isActive: editor.isActive('orderedList'),
+      isActive: editor.isActive("orderedList"),
     },
     {
       icon: <Quote className="h-4 w-4" />,
       tooltip: "Quote",
       onClick: () => editor.chain().focus().toggleBlockquote().run(),
-      isActive: editor.isActive('blockquote'),
+      isActive: editor.isActive("blockquote"),
     },
-  ]
+  ];
 
   const actionButtons = [
     {
@@ -154,14 +178,14 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
       onClick: () => editor.chain().focus().redo().run(),
       disabled: !editor.can().redo(),
     },
-  ]
+  ];
 
   return (
     <motion.div
       initial={{ opacity: 0, y: -10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.2 }}
-      className="flex items-center gap-1 p-3 bg-muted/30 border-b"
+      className="flex items-center gap-1 p-2 backdrop-blur-sm bg-white/10 border-b border-white/10"
     >
       {/* Format Buttons */}
       <div className="flex items-center gap-1">
@@ -170,7 +194,7 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
         ))}
       </div>
 
-      <Separator orientation="vertical" className="mx-2 h-6" />
+      <Separator orientation="vertical" className="mx-2 h-6 border-white/20" />
 
       {/* Heading Buttons */}
       <div className="flex items-center gap-1">
@@ -179,7 +203,7 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
         ))}
       </div>
 
-      <Separator orientation="vertical" className="mx-2 h-6" />
+      <Separator orientation="vertical" className="mx-2 h-6 border-white/20" />
 
       {/* List Buttons */}
       <div className="flex items-center gap-1">
@@ -188,7 +212,7 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
         ))}
       </div>
 
-      <Separator orientation="vertical" className="mx-2 h-6" />
+      <Separator orientation="vertical" className="mx-2 h-6 border-white/20" />
 
       {/* Action Buttons */}
       <div className="flex items-center gap-1">
@@ -197,21 +221,31 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
         ))}
       </div>
 
-      {/* AI Assistant Button */}
-      <div className="ml-auto">
-        <Button
-          variant="outline"
-          size="sm"
-          className="gap-2"
-          onClick={() => {
-            // AI 기능 구현 예정
-            console.log('AI Assistant from toolbar')
-          }}
-        >
-          <Palette className="h-4 w-4" />
-          AI 도움말
-        </Button>
+      {/* Spacer to push sidebar controls to the right */}
+      <div className="flex-1" />
+
+      {/* Sidebar Toggle Buttons */}
+      <div className="flex items-center gap-1">
+        {onToggleOutline && (
+          <ToolbarButton
+            onClick={onToggleOutline}
+            isActive={showOutline}
+            icon={<PanelLeftOpen className="h-4 w-4" />}
+            tooltip={
+              showOutline ? "인덱스 사이드바 숨기기" : "인덱스 사이드바 보이기"
+            }
+          />
+        )}
+
+        {onToggleAiChat && (
+          <ToolbarButton
+            onClick={onToggleAiChat}
+            isActive={showAiChat}
+            icon={<PanelRightOpen className="h-4 w-4" />}
+            tooltip={showAiChat ? "AI 사이드바 숨기기" : "AI 사이드바 보이기"}
+          />
+        )}
       </div>
     </motion.div>
-  )
-} 
+  );
+}
