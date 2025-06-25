@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 
 export default function LandingPage() {
-  const { user, signOut, loading } = useAuth();
+  const { user, loading } = useAuth();
 
   if (loading) {
     return (

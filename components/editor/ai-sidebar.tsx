@@ -2,7 +2,6 @@
 
 import { useState, useRef, useCallback } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface AiSidebarProps {

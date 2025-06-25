@@ -55,6 +55,10 @@ export default function DashboardPage() {
     }
   }, [user, loading, router]);
 
+  useEffect(() => {
+    setDocuments(mockDocuments);
+  }, [user]);
+
   // 드롭다운 외부 클릭 시 닫기
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {

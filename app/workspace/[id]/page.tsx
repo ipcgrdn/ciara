@@ -223,11 +223,6 @@ export default function WorkspacePage() {
 
   const handleOnboardingComplete = (onboardingData: OnboardingData) => {
     if (document) {
-      // AI 목차 생성이 활성화된 경우 기본 구조 제공
-      if (onboardingData.generateOutline) {
-        const outlineContent = generateInitialOutline(onboardingData);
-      }
-
       const updatedDocument = {
         ...document,
         title: onboardingData.title || "제목 없는 문서",
@@ -240,65 +235,6 @@ export default function WorkspacePage() {
     setShowOnboarding(false);
   };
 
-  const generateInitialOutline = (data: OnboardingData) => {
-    const { documentType, title, description } = data;
-
-    // 문서 유형별 기본 목차 템플릿
-    const templates = {
-      academic: `
-        <h1>${title}</h1>
-        ${description ? `<p><em>${description}</em></p>` : ""}
-        <h2>1. 서론</h2>
-        <p>연구의 배경과 목적을 설명합니다.</p>
-        <h2>2. 문헌 검토</h2>
-        <p>관련 선행 연구들을 검토합니다.</p>
-        <h2>3. 연구 방법</h2>
-        <p>연구에 사용된 방법론을 설명합니다.</p>
-        <h2>4. 연구 결과</h2>
-        <p>연구 결과를 제시합니다.</p>
-        <h2>5. 결론</h2>
-        <p>연구의 결론과 시사점을 정리합니다.</p>
-      `,
-      business: `
-        <h1>${title}</h1>
-        ${description ? `<p><em>${description}</em></p>` : ""}
-        <h2>1. 개요</h2>
-        <p>프로젝트 또는 제안의 개요를 설명합니다.</p>
-        <h2>2. 현황 분석</h2>
-        <p>현재 상황을 분석합니다.</p>
-        <h2>3. 목표 및 전략</h2>
-        <p>달성하고자 하는 목표와 전략을 제시합니다.</p>
-        <h2>4. 실행 계획</h2>
-        <p>구체적인 실행 방안을 설명합니다.</p>
-        <h2>5. 예상 효과</h2>
-        <p>기대되는 결과와 효과를 제시합니다.</p>
-      `,
-      creative: `
-        <h1>${title}</h1>
-        ${description ? `<p><em>${description}</em></p>` : ""}
-        <h2>프롤로그</h2>
-        <p>이야기의 시작을 설정합니다.</p>
-        <h2>1장</h2>
-        <p>첫 번째 장의 내용을 작성합니다.</p>
-        <h2>2장</h2>
-        <p>두 번째 장의 내용을 작성합니다.</p>
-        <h2>에필로그</h2>
-        <p>이야기의 마무리를 작성합니다.</p>
-      `,
-      other: `
-        <h1>${title}</h1>
-        ${description ? `<p><em>${description}</em></p>` : ""}
-        <h2>목차 1</h2>
-        <p>첫 번째 섹션의 내용을 작성하세요.</p>
-        <h2>목차 2</h2>
-        <p>두 번째 섹션의 내용을 작성하세요.</p>
-        <h2>결론</h2>
-        <p>문서의 결론을 작성하세요.</p>
-      `,
-    };
-
-    return templates[documentType as keyof typeof templates] || templates.other;
-  };
 
   if (loading) {
     return (
