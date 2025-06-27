@@ -10,15 +10,12 @@ import Image from "next/image";
 import { TiptapEditor } from "@/components/editor/tiptap-editor";
 import { OnboardingModal } from "@/components/editor/onboarding-modal";
 import { Cog6ToothIcon, UserIcon } from "@heroicons/react/24/outline";
-
-// 문서 타입 정의
-interface Document {
-  id: string;
-  title: string;
-  content: string;
-  lastModified: string;
-  created_at?: string;
-}
+import {
+  getDocumentById,
+  createDocument,
+  updateDocument,
+  type Document,
+} from "@/lib/documents";
 
 // 온보딩 데이터 타입 정의
 interface OnboardingData {
@@ -30,31 +27,6 @@ interface OnboardingData {
   attachments: File[];
 }
 
-// 임시 문서 데이터 (나중에 완전히 Supabase로 교체)
-const mockDocuments: Record<string, Document> = {
-  "1": {
-    id: "1",
-    title: "인공지능과 미래사회",
-    content:
-      "<h1>인공지능과 미래사회</h1><p>인공지능 기술의 발전이 우리 사회에 미치는 영향에 대한 연구...</p><p>현재 우리는 제4차 산업혁명의 한복판에 서 있습니다.</p>",
-    lastModified: "2024-01-15",
-  },
-  "2": {
-    id: "2",
-    title: "기후변화 대응 방안",
-    content:
-      "<h1>기후변화 대응 방안</h1><p>전 지구적 기후변화 문제에 대한 종합적 분석과 해결책...</p>",
-    lastModified: "2024-01-12",
-  },
-  "3": {
-    id: "3",
-    title: "디지털 마케팅 전략",
-    content:
-      "<h1>디지털 마케팅 전략</h1><p>소셜미디어 시대의 효과적인 마케팅 전략 수립...</p>",
-    lastModified: "2024-01-10",
-  },
-};
-
 export default function WorkspacePage() {
   const { user, loading, signOut } = useAuth();
   const router = useRouter();
@@ -62,10 +34,12 @@ export default function WorkspacePage() {
   const documentId = params.id as string;
 
   const [document, setDocument] = useState<Document | null>(null);
+  const [isLoadingDocument, setIsLoadingDocument] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
+  const [documentNotFound, setDocumentNotFound] = useState(false);
 
   // 문서 저장 함수
   const saveDocument = async (updatedDocument: Document) => {
@@ -74,23 +48,24 @@ export default function WorkspacePage() {
     setIsSaving(true);
 
     try {
-      // Supabase에 문서 업데이트 (테이블이 준비되면 주석 해제)
-      // const { error } = await supabase
-      //   .from('documents')
-      //   .update({
-      //     title: updatedDocument.title,
-      //     content: updatedDocument.content,
-      //     word_count: updatedDocument.wordCount,
-      //     status: updatedDocument.status,
-      //     updated_at: new Date().toISOString()
-      //   })
-      //   .eq('id', updatedDocument.id)
-      //   .eq('user_id', user.id)
+      // 먼저 문서가 DB에 존재하는지 확인
+      const existingDoc = await getDocumentById(updatedDocument.id);
 
-      // if (error) {
-      //   console.error('Error saving document:', error)
-      //   return
-      // }
+      if (existingDoc) {
+        // 기존 문서 업데이트
+        await updateDocument(updatedDocument.id, {
+          title: updatedDocument.title,
+          content: updatedDocument.content,
+        });
+      } else {
+        // 새 문서 생성 (fallback으로 생성된 문서인 경우)
+        await createDocument({
+          id: updatedDocument.id,
+          title: updatedDocument.title,
+          content: updatedDocument.content,
+          user_id: user.id,
+        });
+      }
 
       setLastSaved(new Date());
     } catch (error) {
@@ -125,68 +100,28 @@ export default function WorkspacePage() {
     const loadDocument = async () => {
       if (!user) return;
 
-      // 기존 문서 로드 시도
+      setIsLoadingDocument(true);
+      setDocumentNotFound(false);
+
       try {
-        // Supabase에서 문서 로드 (테이블이 준비되면 주석 해제)
-        // const { data, error } = await supabase
-        //   .from('documents')
-        //   .select('*')
-        //   .eq('id', documentId)
-        //   .eq('user_id', user.id)
-        //   .single()
+        // 기존 문서 로드 시도
+        const existingDocument = await getDocumentById(documentId);
 
-        // if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
-        //   console.error('Error loading document:', error)
-        //   return
-        // }
-
-        // if (data) {
-        //   setDocument({
-        //     id: data.id,
-        //     title: data.title,
-        //     content: data.content,
-        //     lastModified: data.updated_at?.split('T')[0] || data.created_at?.split('T')[0],
-        //     wordCount: data.word_count,
-        //     status: data.status,
-        //     user_id: data.user_id
-        //   })
-        //   return
-        // }
-
-        // 임시로 목 데이터 확인
-        if (mockDocuments[documentId]) {
-          setDocument(mockDocuments[documentId]);
+        if (existingDocument) {
+          setDocument(existingDocument);
+          setIsLoadingDocument(false);
           return;
         }
 
-        // 문서가 존재하지 않으면 새 문서로 생성
-        const newDocument: Document = {
-          id: documentId,
-          title: "제목 없는 문서",
-          content: "<p>여기서 문서 작성을 시작하세요...</p>",
-          lastModified: new Date().toISOString().split("T")[0],
-        };
-
-        setDocument(newDocument);
-        setShowOnboarding(true);
-
-        // Supabase에 새 문서 저장 (테이블이 준비되면 주석 해제)
-        // const { error: insertError } = await supabase
-        //   .from('documents')
-        //   .insert([{
-        //     id: newDocument.id,
-        //     title: newDocument.title,
-        //     content: newDocument.content,
-        //     word_count: newDocument.wordCount,
-        //     status: newDocument.status,
-        //     user_id: newDocument.user_id
-        //   }])
-
-        // if (insertError) {
-        //   console.error('Error creating document:', insertError)
-        // }
+        // 문서가 존재하지 않으면 not found 상태로 설정
+        setDocumentNotFound(true);
+        setDocument(null);
       } catch (error) {
         console.error("Error loading document:", error);
+        setDocumentNotFound(true);
+        setDocument(null);
+      } finally {
+        setIsLoadingDocument(false);
       }
     };
 
@@ -235,15 +170,16 @@ export default function WorkspacePage() {
     setShowOnboarding(false);
   };
 
-
-  if (loading) {
+  if (loading || isLoadingDocument) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50/80 via-white to-slate-100/60 flex items-center justify-center">
         <div className="text-center">
-          <div className="w-8 h-8 backdrop-blur-md bg-white/20 border border-white/30 rounded-lg flex items-center justify-center mx-auto mb-4">
+          <div className="w-8 h-8 backdrop-blur-md bg-white/20 border border-white/30 rounded-lg flex items-center justify-center mx-auto mb-4 animate-spin">
             <span className="text-black text-sm font-bold">C</span>
           </div>
-          <p className="text-gray-800">로딩 중...</p>
+          <p className="text-gray-800">
+            {loading ? "로딩 중..." : "문서를 불러오는 중..."}
+          </p>
         </div>
       </div>
     );
@@ -253,15 +189,69 @@ export default function WorkspacePage() {
     return null; // 리다이렉트 처리 중
   }
 
+  if (documentNotFound) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50/80 via-white to-slate-100/60 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-20 h-20 backdrop-blur-md bg-white/20 border border-white/30 rounded-2xl flex items-center justify-center mx-auto mb-6">
+            <svg
+              className="w-10 h-10 text-gray-600"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={1.5}
+                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+              />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={1.5}
+                d="M15 12H9m6 4H9"
+              />
+              <circle cx="12" cy="12" r="1" fill="currentColor" />
+            </svg>
+          </div>
+          <h2 className="text-2xl font-medium text-black mb-2">
+            문서를 찾을 수 없습니다
+          </h2>
+          <p className="text-gray-800 mb-6 max-w-md">
+            요청하신 문서가 존재하지 않거나 접근 권한이 없습니다.
+            <br />
+            대시보드로 이동하시겠습니까?
+          </p>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <Link href="/dashboard">
+              <Button className="backdrop-blur-sm bg-black/80 hover:bg-black text-white border-0 px-6 py-2">
+                대시보드로 이동
+              </Button>
+            </Link>
+            <Button
+              variant="outline"
+              onClick={() => router.back()}
+              className="backdrop-blur-sm bg-white/20 hover:bg-white/30 text-black border-white/30 px-6 py-2"
+            >
+              이전 페이지로
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (!document) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50/80 via-white to-slate-100/60 flex items-center justify-center">
         <div className="text-center">
           <h2 className="text-2xl font-medium text-black mb-2">
-            문서를 찾을 수 없습니다
+            문서를 불러올 수 없습니다
           </h2>
           <p className="text-gray-800 mb-4">
-            요청하신 문서가 존재하지 않거나 접근 권한이 없습니다.
+            문서를 불러오는 중 오류가 발생했습니다.
           </p>
           <Link href="/dashboard">
             <Button>대시보드로 돌아가기</Button>
@@ -281,7 +271,6 @@ export default function WorkspacePage() {
       />
 
       <main className="h-screen bg-gradient-to-br from-slate-50/80 via-white to-slate-100/60 flex flex-col">
-        
         {/* Navigation */}
         <nav className="relative z-50 backdrop-blur-sm bg-white/10 border-b border-black/10 flex-shrink-0">
           <div className="container mx-auto px-4 py-2">

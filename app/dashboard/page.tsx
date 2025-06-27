@@ -12,41 +12,146 @@ import {
   Cog6ToothIcon,
   FolderIcon,
   UserIcon,
+  EllipsisVerticalIcon,
+  PencilIcon,
+  TrashIcon,
 } from "@heroicons/react/24/outline";
 import Image from "next/image";
+import {
+  getUserDocuments,
+  updateDocument,
+  deleteDocument,
+  formatLastModified,
+  type Document,
+} from "@/lib/documents";
 
-// 임시 문서 데이터 (나중에 Supabase에서 가져올 예정)
-const mockDocuments = [
-  {
-    id: 1,
-    title: "인공지능과 미래사회",
-    content: "인공지능 기술의 발전이 우리 사회에 미치는 영향에 대한 연구...",
-    lastModified: "2024-01-15",
-  },
-  {
-    id: 2,
-    title: "기후변화 대응 방안",
-    content: "전 지구적 기후변화 문제에 대한 종합적 분석과 해결책...",
-    lastModified: "2024-01-12",
-  },
-  {
-    id: 3,
-    title: "디지털 마케팅 전략",
-    content: "소셜미디어 시대의 효과적인 마케팅 전략 수립...",
-    lastModified: "2024-01-10",
-  },
-];
+// HTML/마크다운 태그를 제거하고 순수 텍스트만 추출하는 함수
+function stripHtmlAndMarkdown(text: string): string {
+  if (!text) return "";
+
+  return (
+    text
+      // HTML 태그 제거
+      .replace(/<[^>]*>/g, "")
+      // 마크다운 링크 제거 [텍스트](링크) -> 텍스트
+      .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+      // 마크다운 이미지 제거 ![alt](src)
+      .replace(/!\[([^\]]*)\]\([^)]+\)/g, "")
+      // 마크다운 헤더 제거 # ## ###
+      .replace(/^#{1,6}\s+/gm, "")
+      // 마크다운 굵은 글씨 제거 **텍스트** -> 텍스트
+      .replace(/\*\*([^*]+)\*\*/g, "$1")
+      // 마크다운 기울임 제거 *텍스트* -> 텍스트
+      .replace(/\*([^*]+)\*/g, "$1")
+      // 마크다운 코드 블록 제거 ```코드```
+      .replace(/```[\s\S]*?```/g, "")
+      // 인라인 코드 제거 `코드`
+      .replace(/`([^`]+)`/g, "$1")
+      // 마크다운 인용구 제거 > 텍스트
+      .replace(/^>\s+/gm, "")
+      // 마크다운 리스트 제거 - 텍스트, * 텍스트
+      .replace(/^[-*+]\s+/gm, "")
+      // 숫자 리스트 제거 1. 텍스트
+      .replace(/^\d+\.\s+/gm, "")
+      // 과도한 공백 제거
+      .replace(/\s+/g, " ")
+      .trim()
+  );
+}
 
 export default function DashboardPage() {
   const { user, loading, signOut } = useAuth();
   const router = useRouter();
-  const [documents, setDocuments] = useState(mockDocuments);
+  const [documents, setDocuments] = useState<Document[]>([]);
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
+  const [isLoadingDocuments, setIsLoadingDocuments] = useState(false);
+  const [editingDocumentId, setEditingDocumentId] = useState<string | null>(
+    null
+  );
+  const [editingTitle, setEditingTitle] = useState("");
+  const [documentMenuOpen, setDocumentMenuOpen] = useState<string | null>(null);
 
   // 새 문서 생성 함수
-  const createNewDocument = () => {
-    const newDocumentId = uuidv4();
-    router.push(`/workspace/${newDocumentId}`);
+  const createNewDocument = async () => {
+    if (!user) return;
+
+    try {
+      // UUID를 미리 생성하여 워크스페이스로 이동
+      const newDocumentId = uuidv4();
+      router.push(`/workspace/${newDocumentId}`);
+    } catch (error) {
+      console.error("문서 생성 실패:", error);
+    }
+  };
+
+  // 문서 목록 불러오기
+  const loadDocuments = async () => {
+    if (!user) return;
+
+    setIsLoadingDocuments(true);
+    try {
+      const userDocs = await getUserDocuments(user.id);
+      setDocuments(userDocs);
+    } catch (error) {
+      console.error("문서 불러오기 실패:", error);
+    } finally {
+      setIsLoadingDocuments(false);
+    }
+  };
+
+  // 문서 제목 수정 시작
+  const startEditingTitle = (doc: Document) => {
+    setEditingDocumentId(doc.id);
+    setEditingTitle(doc.title);
+    setDocumentMenuOpen(null);
+  };
+
+  // 문서 제목 수정 완료
+  const finishEditingTitle = async () => {
+    if (!editingDocumentId || !editingTitle.trim()) {
+      setEditingDocumentId(null);
+      setEditingTitle("");
+      return;
+    }
+
+    try {
+      await updateDocument(editingDocumentId, { title: editingTitle.trim() });
+      await loadDocuments(); // 문서 목록 새로고침
+    } catch (error) {
+      console.error("문서 제목 수정 실패:", error);
+    } finally {
+      setEditingDocumentId(null);
+      setEditingTitle("");
+    }
+  };
+
+  // 문서 제목 수정 취소
+  const cancelEditingTitle = () => {
+    setEditingDocumentId(null);
+    setEditingTitle("");
+  };
+
+  // 문서 삭제
+  const handleDeleteDocument = async (documentId: string) => {
+    if (!confirm("정말로 이 문서를 삭제하시겠습니까?")) {
+      return;
+    }
+
+    try {
+      await deleteDocument(documentId);
+      await loadDocuments(); // 문서 목록 새로고침
+    } catch (error) {
+      console.error("문서 삭제 실패:", error);
+    } finally {
+      setDocumentMenuOpen(null);
+    }
+  };
+
+  // 문서 카드 클릭 (편집 모드가 아닐 때만)
+  const handleDocumentClick = (documentId: string) => {
+    if (!editingDocumentId) {
+      router.push(`/workspace/${documentId}`);
+    }
   };
 
   useEffect(() => {
@@ -56,7 +161,9 @@ export default function DashboardPage() {
   }, [user, loading, router]);
 
   useEffect(() => {
-    setDocuments(mockDocuments);
+    if (user) {
+      loadDocuments();
+    }
   }, [user]);
 
   // 드롭다운 외부 클릭 시 닫기
@@ -66,11 +173,30 @@ export default function DashboardPage() {
       if (!target.closest("[data-profile-dropdown]")) {
         setIsProfileDropdownOpen(false);
       }
+      if (!target.closest("[data-document-menu]")) {
+        setDocumentMenuOpen(null);
+      }
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        if (editingDocumentId) {
+          cancelEditingTitle();
+        }
+        setDocumentMenuOpen(null);
+      }
+      if (event.key === "Enter" && editingDocumentId) {
+        finishEditingTitle();
+      }
     };
 
     document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [editingDocumentId]);
 
   if (loading) {
     return (
@@ -287,7 +413,15 @@ export default function DashboardPage() {
               <CardTitle className="text-black">최근 문서</CardTitle>
             </CardHeader>
             <CardContent>
-              {documents.length === 0 ? (
+              {isLoadingDocuments ? (
+                /* Loading State */
+                <div className="flex flex-col items-center justify-center py-16">
+                  <div className="w-8 h-8 backdrop-blur-md bg-white/20 border border-white/30 rounded-lg flex items-center justify-center mx-auto mb-4 animate-spin">
+                    <span className="text-black text-sm font-bold">C</span>
+                  </div>
+                  <p className="text-gray-800">문서를 불러오는 중...</p>
+                </div>
+              ) : documents.length === 0 ? (
                 /* Empty State */
                 <div className="flex flex-col items-center justify-center py-16">
                   <div className="w-20 h-20 backdrop-blur-md bg-white/20 border border-white/30 rounded-2xl flex items-center justify-center mx-auto mb-6">
@@ -315,26 +449,98 @@ export default function DashboardPage() {
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {documents.map((doc, index) => (
+                  {documents.map((doc: Document, index: number) => (
                     <motion.div
                       key={doc.id}
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ duration: 0.4, delay: 0.1 * index }}
-                      className="p-4 backdrop-blur-sm bg-white/20 rounded-lg border border-white/30 hover:bg-white/30 transition-all duration-200 cursor-pointer"
-                      onClick={() => router.push(`/workspace/${doc.id}`)}
+                      className={`group relative p-4 backdrop-blur-sm bg-white/20 rounded-lg border border-white/30 hover:bg-white/30 transition-all duration-200 cursor-pointer ${
+                        documentMenuOpen === doc.id ? "z-[9999]" : "z-10"
+                      }`}
+                      onClick={() => handleDocumentClick(doc.id)}
                     >
                       <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <h4 className="font-medium text-black mb-1">
-                            {doc.title}
-                          </h4>
+                        <div className="flex-1 min-w-0">
+                          {editingDocumentId === doc.id ? (
+                            <input
+                              type="text"
+                              value={editingTitle}
+                              onChange={(e) => setEditingTitle(e.target.value)}
+                              onBlur={() => {
+                                setTimeout(finishEditingTitle, 100);
+                              }}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") {
+                                  finishEditingTitle();
+                                } else if (e.key === "Escape") {
+                                  cancelEditingTitle();
+                                }
+                              }}
+                              className="w-full font-medium text-black mb-1 bg-white/50 border border-white/50 rounded px-2 py-1 text-sm"
+                              autoFocus
+                              onClick={(e) => e.stopPropagation()}
+                            />
+                          ) : (
+                            <h4 className="font-medium text-black mb-1 truncate">
+                              {doc.title}
+                            </h4>
+                          )}
                           <p className="text-sm text-gray-800 mb-2 line-clamp-1">
-                            {doc.content}
+                            {stripHtmlAndMarkdown(doc.content)}
                           </p>
                           <div className="flex items-center space-x-4 text-xs text-gray-600">
-                            <span>{doc.lastModified}</span>
+                            <span>{formatLastModified(doc.last_modified)}</span>
                           </div>
+                        </div>
+
+                        {/* More Options Button */}
+                        <div className="relative ml-2" data-document-menu>
+                          <button
+                            className="opacity-0 group-hover:opacity-100 p-1 rounded-md hover:bg-white/20 transition-all duration-200"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setDocumentMenuOpen(
+                                documentMenuOpen === doc.id ? null : doc.id
+                              );
+                            }}
+                          >
+                            <EllipsisVerticalIcon className="h-4 w-4 text-gray-600" />
+                          </button>
+
+                          {/* Dropdown Menu */}
+                          <AnimatePresence>
+                            {documentMenuOpen === doc.id && (
+                              <motion.div
+                                initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                                animate={{ opacity: 1, scale: 1, y: 0 }}
+                                exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                                transition={{ duration: 0.15 }}
+                                className="absolute right-0 top-full mt-1 w-32 backdrop-blur-md bg-white/95 border border-white/30 rounded-lg shadow-lg z-[9999]"
+                              >
+                                <button
+                                  className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-black hover:bg-white/20 transition-colors rounded-t-lg"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    startEditingTitle(doc);
+                                  }}
+                                >
+                                  <PencilIcon className="h-3 w-3" />
+                                  <span>제목 수정</span>
+                                </button>
+                                <button
+                                  className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50/50 transition-colors rounded-b-lg"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleDeleteDocument(doc.id);
+                                  }}
+                                >
+                                  <TrashIcon className="h-3 w-3" />
+                                  <span>삭제</span>
+                                </button>
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
                         </div>
                       </div>
                     </motion.div>
