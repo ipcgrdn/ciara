@@ -17,16 +17,6 @@ import {
   type Document,
 } from "@/lib/documents";
 
-// 온보딩 데이터 타입 정의
-interface OnboardingData {
-  title: string;
-  documentType: "academic" | "business" | "creative" | "other";
-  description: string;
-  hasAttachments: boolean;
-  generateOutline: boolean;
-  attachments: File[];
-}
-
 export default function WorkspacePage() {
   const { user, loading, signOut } = useAuth();
   const router = useRouter();
@@ -37,9 +27,17 @@ export default function WorkspacePage() {
   const [isLoadingDocument, setIsLoadingDocument] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
-  const [showOnboarding, setShowOnboarding] = useState(false);
+
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
   const [documentNotFound, setDocumentNotFound] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
+
+  // AI 설정 상태 추가
+  const [aiConfig, setAiConfig] = useState<{
+    mode: "traditional" | "ai-assisted";
+    purpose?: string;
+    additionalInfo?: string;
+  } | null>(null);
 
   // 문서 저장 함수
   const saveDocument = async (updatedDocument: Document) => {
@@ -113,9 +111,19 @@ export default function WorkspacePage() {
           return;
         }
 
-        // 문서가 존재하지 않으면 not found 상태로 설정
-        setDocumentNotFound(true);
-        setDocument(null);
+        // 문서가 존재하지 않으면 새 문서로 생성하고 온보딩 표시
+        const newDocument: Document = {
+          id: documentId,
+          title: "제목 없는 문서",
+          content: "",
+          user_id: user.id,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          last_modified: new Date().toISOString(),
+        };
+
+        setDocument(newDocument);
+        setShowOnboarding(true);
       } catch (error) {
         console.error("Error loading document:", error);
         setDocumentNotFound(true);
@@ -135,12 +143,16 @@ export default function WorkspacePage() {
       const updatedDocument = {
         ...document,
         content,
+        updated_at: new Date().toISOString(),
+        last_modified: new Date().toISOString(),
       };
 
       setDocument(updatedDocument);
 
-      // 자동 저장 (디바운싱 적용하면 더 좋음)
-      saveDocument(updatedDocument);
+      // 빈 내용이 아니거나 제목이 변경된 경우에만 저장
+      if (content.trim() !== "" || updatedDocument.title !== "제목 없는 문서") {
+        saveDocument(updatedDocument);
+      }
     }
   };
 
@@ -149,25 +161,57 @@ export default function WorkspacePage() {
       const updatedDocument = {
         ...document,
         title: newTitle,
+        updated_at: new Date().toISOString(),
+        last_modified: new Date().toISOString(),
       };
 
       setDocument(updatedDocument);
-      saveDocument(updatedDocument);
+
+      // 제목이 실제로 변경되었거나 내용이 있는 경우에만 저장
+      if (newTitle.trim() !== "" && newTitle !== "제목 없는 문서") {
+        saveDocument(updatedDocument);
+      }
     }
   };
 
-  const handleOnboardingComplete = (onboardingData: OnboardingData) => {
-    if (document) {
-      const updatedDocument = {
-        ...document,
-        title: onboardingData.title || "제목 없는 문서",
-        content: "",
-      };
+  const handleModeSelect = (
+    mode: "traditional" | "ai-assisted",
+    config?: { purpose: string; additionalInfo: string }
+  ) => {
+    if (mode === "ai-assisted" && config) {
+      setAiConfig({
+        mode: "ai-assisted",
+        purpose: config.purpose,
+        additionalInfo: config.additionalInfo,
+      });
 
-      setDocument(updatedDocument);
-      saveDocument(updatedDocument);
+      // 문서 제목을 목적에 따라 자동 설정
+      if (document) {
+        const purposeNames: Record<string, string> = {
+          report: "보고서",
+          essay: "에세이",
+          proposal: "기획서",
+          article: "기사",
+          academic: "논문",
+          creative: "창작물",
+          other: "문서",
+        };
+
+        const purposeName = purposeNames[config.purpose] || "문서";
+        const newTitle = `새로운 ${purposeName}`;
+
+        const updatedDocument = {
+          ...document,
+          title: newTitle,
+          updated_at: new Date().toISOString(),
+          last_modified: new Date().toISOString(),
+        };
+        setDocument(updatedDocument);
+        saveDocument(updatedDocument);
+      }
+    } else {
+      setAiConfig({ mode: "traditional" });
     }
-    setShowOnboarding(false);
   };
 
   if (loading || isLoadingDocument) {
@@ -262,186 +306,184 @@ export default function WorkspacePage() {
   }
 
   return (
-    <>
-      {/* Document Onboarding Modal */}
-      <OnboardingModal
-        isOpen={showOnboarding}
-        onClose={() => setShowOnboarding(false)}
-        onComplete={handleOnboardingComplete}
-      />
-
-      <main className="h-screen bg-gradient-to-br from-slate-50/80 via-white to-slate-100/60 flex flex-col">
-        {/* Navigation */}
-        <nav className="relative z-50 backdrop-blur-sm bg-white/10 border-b border-black/10 flex-shrink-0">
-          <div className="container mx-auto px-4 py-2">
-            <div className="flex items-center">
-              {/* Left - Logo (Fixed Width) */}
-              <div className="w-48 flex-shrink-0">
-                <Link href="/dashboard" className="flex items-center space-x-3">
-                  <div className="w-8 h-8 backdrop-blur-md bg-white/20 border border-white/30 rounded-lg flex items-center justify-center">
-                    <span className="text-black text-sm font-bold">C</span>
-                  </div>
-                  <span className="text-2xl font-light text-black">CLARA</span>
-                </Link>
-              </div>
-
-              {/* Center - Document Title (Flex Grow) */}
-              <div className="flex-1 text-center">
-                <input
-                  type="text"
-                  value={document.title}
-                  onChange={(e) => handleTitleChange(e.target.value)}
-                  className="text-md font-medium text-black bg-transparent border-none outline-none text-center placeholder-gray-400 w-full max-w-md mx-auto"
-                  placeholder="문서 제목을 입력하세요..."
-                />
-              </div>
-
-              {/* Right - User Profile & Status (Fixed Width) */}
-              <div className="w-48 flex items-center justify-end space-x-4 flex-shrink-0">
-                <div className="text-sm text-gray-800 whitespace-nowrap">
-                  {isSaving ? (
-                    <span className="flex items-center space-x-2">
-                      <div className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse" />
-                      <span>저장 중...</span>
-                    </span>
-                  ) : lastSaved ? (
-                    <span className="flex items-center space-x-2">
-                      <div className="w-2 h-2 bg-green-500 rounded-full" />
-                      <span>저장됨 {lastSaved.toLocaleTimeString()}</span>
-                    </span>
-                  ) : null}
+    <main className="h-screen bg-gradient-to-br from-slate-50/80 via-white to-slate-100/60 flex flex-col">
+      {/* Navigation */}
+      <nav className="relative z-50 backdrop-blur-sm bg-white/10 border-b border-black/10 flex-shrink-0">
+        <div className="container mx-auto px-4 py-2">
+          <div className="flex items-center">
+            {/* Left - Logo (Fixed Width) */}
+            <div className="w-48 flex-shrink-0">
+              <Link href="/dashboard" className="flex items-center space-x-3">
+                <div className="w-8 h-8 backdrop-blur-md bg-white/20 border border-white/30 rounded-lg flex items-center justify-center">
+                  <span className="text-black text-sm font-bold">C</span>
                 </div>
+                <span className="text-2xl font-light text-black">CLARA</span>
+              </Link>
+            </div>
 
-                {/* Profile Dropdown */}
-                <div className="relative" data-profile-dropdown>
-                  <div
-                    className="flex items-center p-2 rounded-lg hover:bg-white/20 transition-all duration-200 cursor-pointer"
-                    onMouseEnter={() => setIsProfileDropdownOpen(true)}
-                    onMouseLeave={() => setIsProfileDropdownOpen(false)}
-                  >
-                    {user.user_metadata?.avatar_url ||
-                    user.user_metadata?.picture ? (
-                      <Image
-                        src={
-                          user.user_metadata?.avatar_url ||
-                          user.user_metadata?.picture
-                        }
-                        alt="Profile"
-                        className="w-8 h-8 rounded-full object-cover border-2 border-white/30"
-                        width={32}
-                        height={32}
-                      />
-                    ) : (
-                      <div className="w-8 h-8 backdrop-blur-md bg-white/20 border border-white/30 rounded-full flex items-center justify-center">
-                        <UserIcon className="h-4 w-4 text-black" />
-                      </div>
-                    )}
+            {/* Center - Document Title (Flex Grow) */}
+            <div className="flex-1 text-center">
+              <input
+                type="text"
+                value={document.title}
+                onChange={(e) => handleTitleChange(e.target.value)}
+                className="text-md font-medium text-black bg-transparent border-none outline-none text-center placeholder-gray-400 w-full max-w-md mx-auto"
+                placeholder="문서 제목을 입력하세요..."
+              />
+            </div>
 
-                    {/* Dropdown Menu */}
-                    <AnimatePresence>
-                      {isProfileDropdownOpen && (
-                        <motion.div
-                          initial={{ opacity: 0, scale: 0.95, y: -10 }}
-                          animate={{ opacity: 1, scale: 1, y: 0 }}
-                          exit={{ opacity: 0, scale: 0.95, y: -10 }}
-                          transition={{ duration: 0.2 }}
-                          className="absolute right-0 top-full mt-2 w-56 backdrop-blur-md bg-white/95 border border-white/30 rounded-lg shadow-2xl z-[60]"
-                          onMouseEnter={() => setIsProfileDropdownOpen(true)}
-                          onMouseLeave={() => setIsProfileDropdownOpen(false)}
-                        >
-                          <div className="p-3 border-b border-white/20">
-                            <div className="flex items-center space-x-3">
-                              {user.user_metadata?.avatar_url ||
-                              user.user_metadata?.picture ? (
-                                <Image
-                                  src={
-                                    user.user_metadata?.avatar_url ||
-                                    user.user_metadata?.picture
-                                  }
-                                  alt="Profile"
-                                  className="w-10 h-10 rounded-full object-cover"
-                                  width={40}
-                                  height={40}
-                                />
-                              ) : (
-                                <div className="w-10 h-10 backdrop-blur-md bg-white/20 border border-white/30 rounded-full flex items-center justify-center">
-                                  <UserIcon className="h-5 w-5 text-black" />
-                                </div>
-                              )}
-                              <div className="flex-1 min-w-0">
-                                <p className="text-sm font-medium text-black truncate">
-                                  {user.user_metadata?.name ||
-                                    user.user_metadata?.full_name ||
-                                    user.email}
-                                </p>
-                                <p className="text-xs text-gray-800 truncate">
-                                  {user.email}
-                                </p>
+            {/* Right - User Profile & Status (Fixed Width) */}
+            <div className="w-48 flex items-center justify-end space-x-4 flex-shrink-0">
+              <div className="text-sm text-gray-800 whitespace-nowrap">
+                {isSaving ? (
+                  <span className="flex items-center space-x-2">
+                    <div className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse" />
+                    <span>저장 중...</span>
+                  </span>
+                ) : lastSaved ? (
+                  <span className="flex items-center space-x-2">
+                    <div className="w-2 h-2 bg-green-500 rounded-full" />
+                    <span>저장됨 {lastSaved.toLocaleTimeString()}</span>
+                  </span>
+                ) : null}
+              </div>
+
+              {/* Profile Dropdown */}
+              <div className="relative" data-profile-dropdown>
+                <div
+                  className="flex items-center p-2 rounded-lg hover:bg-white/20 transition-all duration-200 cursor-pointer"
+                  onMouseEnter={() => setIsProfileDropdownOpen(true)}
+                  onMouseLeave={() => setIsProfileDropdownOpen(false)}
+                >
+                  {user.user_metadata?.avatar_url ||
+                  user.user_metadata?.picture ? (
+                    <Image
+                      src={
+                        user.user_metadata?.avatar_url ||
+                        user.user_metadata?.picture
+                      }
+                      alt="Profile"
+                      className="w-8 h-8 rounded-full object-cover border-2 border-white/30"
+                      width={32}
+                      height={32}
+                    />
+                  ) : (
+                    <div className="w-8 h-8 backdrop-blur-md bg-white/20 border border-white/30 rounded-full flex items-center justify-center">
+                      <UserIcon className="h-4 w-4 text-black" />
+                    </div>
+                  )}
+
+                  {/* Dropdown Menu */}
+                  <AnimatePresence>
+                    {isProfileDropdownOpen && (
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                        transition={{ duration: 0.2 }}
+                        className="absolute right-0 top-full mt-2 w-56 backdrop-blur-md bg-white/95 border border-white/30 rounded-lg shadow-2xl z-[60]"
+                        onMouseEnter={() => setIsProfileDropdownOpen(true)}
+                        onMouseLeave={() => setIsProfileDropdownOpen(false)}
+                      >
+                        <div className="p-3 border-b border-white/20">
+                          <div className="flex items-center space-x-3">
+                            {user.user_metadata?.avatar_url ||
+                            user.user_metadata?.picture ? (
+                              <Image
+                                src={
+                                  user.user_metadata?.avatar_url ||
+                                  user.user_metadata?.picture
+                                }
+                                alt="Profile"
+                                className="w-10 h-10 rounded-full object-cover"
+                                width={40}
+                                height={40}
+                              />
+                            ) : (
+                              <div className="w-10 h-10 backdrop-blur-md bg-white/20 border border-white/30 rounded-full flex items-center justify-center">
+                                <UserIcon className="h-5 w-5 text-black" />
                               </div>
+                            )}
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium text-black truncate">
+                                {user.user_metadata?.name ||
+                                  user.user_metadata?.full_name ||
+                                  user.email}
+                              </p>
+                              <p className="text-xs text-gray-800 truncate">
+                                {user.email}
+                              </p>
                             </div>
                           </div>
+                        </div>
 
-                          <div className="p-2">
-                            <button className="w-full flex items-center space-x-3 px-3 py-2 text-sm text-black hover:bg-white/20 rounded-md transition-colors">
-                              <Cog6ToothIcon className="h-4 w-4" />
-                              <span>계정 설정</span>
-                            </button>
-                            <button className="w-full flex items-center space-x-3 px-3 py-2 text-sm text-black hover:bg-white/20 rounded-md transition-colors">
-                              <UserIcon className="h-4 w-4" />
-                              <span>프로필 관리</span>
-                            </button>
+                        <div className="p-2">
+                          <button className="w-full flex items-center space-x-3 px-3 py-2 text-sm text-black hover:bg-white/20 rounded-md transition-colors">
+                            <Cog6ToothIcon className="h-4 w-4" />
+                            <span>계정 설정</span>
+                          </button>
+                          <button className="w-full flex items-center space-x-3 px-3 py-2 text-sm text-black hover:bg-white/20 rounded-md transition-colors">
+                            <UserIcon className="h-4 w-4" />
+                            <span>프로필 관리</span>
+                          </button>
 
-                            <div className="border-t border-white/20 mt-2 pt-2">
-                              <button
-                                onClick={signOut}
-                                className="w-full flex items-center space-x-3 px-3 py-2 text-sm text-red-600 hover:bg-red-50/50 rounded-md transition-colors"
+                          <div className="border-t border-white/20 mt-2 pt-2">
+                            <button
+                              onClick={signOut}
+                              className="w-full flex items-center space-x-3 px-3 py-2 text-sm text-red-600 hover:bg-red-50/50 rounded-md transition-colors"
+                            >
+                              <svg
+                                className="h-4 w-4"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
                               >
-                                <svg
-                                  className="h-4 w-4"
-                                  fill="none"
-                                  viewBox="0 0 24 24"
-                                  stroke="currentColor"
-                                >
-                                  <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={2}
-                                    d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
-                                  />
-                                </svg>
-                                <span>로그아웃</span>
-                              </button>
-                            </div>
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+                                />
+                              </svg>
+                              <span>로그아웃</span>
+                            </button>
                           </div>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </div>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
               </div>
             </div>
           </div>
-        </nav>
-
-        {/* Editor Section - Full Height Layout */}
-        <div className="relative z-10 flex-1 overflow-hidden">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-            className="h-full"
-          >
-            <TiptapEditor
-              content={document.content}
-              placeholder="여기서 문서 작성을 시작하세요... AI가 도워드립니다!"
-              onContentChange={handleContentChange}
-              showToolbar={true}
-              showOutline={true}
-              showAiChat={true}
-            />
-          </motion.div>
         </div>
-      </main>
-    </>
+      </nav>
+
+      {/* Editor Section - Full Height Layout */}
+      <div className="relative z-10 flex-1 overflow-hidden">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.2 }}
+          className="h-full"
+        >
+          <TiptapEditor
+            content={document.content}
+            placeholder="여기서 문서 작성을 시작하세요... AI가 도워드립니다!"
+            onContentChange={handleContentChange}
+            showToolbar={true}
+            showOutline={true}
+            showAiChat={true}
+          />
+        </motion.div>
+      </div>
+
+      {/* 온보딩 모달 */}
+      <OnboardingModal
+        isOpen={showOnboarding}
+        onClose={() => setShowOnboarding(false)}
+        onSelectMode={handleModeSelect}
+      />
+    </main>
   );
 }
