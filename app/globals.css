@@ -129,7 +129,7 @@
 .ProseMirror.is-editor-empty:first-child::before {
   content: attr(data-placeholder);
   float: left;
-  color: theme('colors.muted.foreground');
+  color: theme("colors.muted.foreground");
   pointer-events: none;
   height: 0;
 }

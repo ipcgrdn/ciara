@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter, useParams } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
@@ -25,59 +25,86 @@ export default function WorkspacePage() {
 
   const [document, setDocument] = useState<Document | null>(null);
   const [isLoadingDocument, setIsLoadingDocument] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const [showSavedMessage, setShowSavedMessage] = useState(false);
 
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
   const [documentNotFound, setDocumentNotFound] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [outlineData, setOutlineData] = useState<string>("");
 
-  // AI 설정 상태 추가
-  const [aiConfig, setAiConfig] = useState<{
-    mode: "traditional" | "ai-assisted";
-    purpose?: string;
-    additionalInfo?: string;
-  } | null>(null);
+  // Debounced 저장을 위한 ref
+  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // 문서 저장 함수
-  const saveDocument = async (updatedDocument: Document) => {
-    if (!user || !updatedDocument.id) return;
+  const saveDocument = useCallback(
+    async (updatedDocument: Document) => {
+      if (!user || !updatedDocument.id) return;
 
-    setIsSaving(true);
+      try {
+        // 먼저 문서가 DB에 존재하는지 확인
+        const existingDoc = await getDocumentById(updatedDocument.id);
 
-    try {
-      // 먼저 문서가 DB에 존재하는지 확인
-      const existingDoc = await getDocumentById(updatedDocument.id);
+        if (existingDoc) {
+          // 기존 문서 업데이트
+          await updateDocument(updatedDocument.id, {
+            title: updatedDocument.title,
+            content: updatedDocument.content,
+          });
+        } else {
+          // 새 문서 생성 (fallback으로 생성된 문서인 경우)
+          await createDocument({
+            id: updatedDocument.id,
+            title: updatedDocument.title,
+            content: updatedDocument.content,
+            user_id: user.id,
+          });
+        }
 
-      if (existingDoc) {
-        // 기존 문서 업데이트
-        await updateDocument(updatedDocument.id, {
-          title: updatedDocument.title,
-          content: updatedDocument.content,
-        });
-      } else {
-        // 새 문서 생성 (fallback으로 생성된 문서인 경우)
-        await createDocument({
-          id: updatedDocument.id,
-          title: updatedDocument.title,
-          content: updatedDocument.content,
-          user_id: user.id,
-        });
+        setLastSaved(new Date());
+        setShowSavedMessage(true);
+
+        // 3초 후에 저장 메시지 숨기기
+        setTimeout(() => {
+          setShowSavedMessage(false);
+        }, 3000);
+      } catch (error) {
+        console.error("Error saving document:", error);
+      }
+    },
+    [user]
+  );
+
+  // Debounced 저장 함수
+  const debouncedSave = useCallback(
+    (updatedDocument: Document) => {
+      // 기존 타이머가 있으면 취소
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
       }
 
-      setLastSaved(new Date());
-    } catch (error) {
-      console.error("Error saving document:", error);
-    } finally {
-      setIsSaving(false);
-    }
-  };
+      // 1.5초 후에 저장 실행
+      saveTimeoutRef.current = setTimeout(() => {
+        saveDocument(updatedDocument);
+      }, 1500);
+    },
+    [saveDocument]
+  );
 
   useEffect(() => {
     if (!loading && !user) {
       router.push("/auth");
     }
   }, [user, loading, router]);
+
+  // 컴포넌트 언마운트 시 타이머 정리
+  useEffect(() => {
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // 드롭다운 외부 클릭 시 닫기
   useEffect(() => {
@@ -149,9 +176,9 @@ export default function WorkspacePage() {
 
       setDocument(updatedDocument);
 
-      // 빈 내용이 아니거나 제목이 변경된 경우에만 저장
+      // 의미 있는 변경사항이 있는 경우에만 debounced 저장
       if (content.trim() !== "" || updatedDocument.title !== "제목 없는 문서") {
-        saveDocument(updatedDocument);
+        debouncedSave(updatedDocument);
       }
     }
   };
@@ -167,50 +194,10 @@ export default function WorkspacePage() {
 
       setDocument(updatedDocument);
 
-      // 제목이 실제로 변경되었거나 내용이 있는 경우에만 저장
+      // 제목이 실제로 변경되었거나 내용이 있는 경우에만 debounced 저장
       if (newTitle.trim() !== "" && newTitle !== "제목 없는 문서") {
-        saveDocument(updatedDocument);
+        debouncedSave(updatedDocument);
       }
-    }
-  };
-
-  const handleModeSelect = (
-    mode: "traditional" | "ai-assisted",
-    config?: { purpose: string; additionalInfo: string }
-  ) => {
-    if (mode === "ai-assisted" && config) {
-      setAiConfig({
-        mode: "ai-assisted",
-        purpose: config.purpose,
-        additionalInfo: config.additionalInfo,
-      });
-
-      // 문서 제목을 목적에 따라 자동 설정
-      if (document) {
-        const purposeNames: Record<string, string> = {
-          report: "보고서",
-          essay: "에세이",
-          proposal: "기획서",
-          article: "기사",
-          academic: "논문",
-          creative: "창작물",
-          other: "문서",
-        };
-
-        const purposeName = purposeNames[config.purpose] || "문서";
-        const newTitle = `새로운 ${purposeName}`;
-
-        const updatedDocument = {
-          ...document,
-          title: newTitle,
-          updated_at: new Date().toISOString(),
-          last_modified: new Date().toISOString(),
-        };
-        setDocument(updatedDocument);
-        saveDocument(updatedDocument);
-      }
-    } else {
-      setAiConfig({ mode: "traditional" });
     }
   };
 
@@ -305,6 +292,10 @@ export default function WorkspacePage() {
     );
   }
 
+  const handleOutlineConfirm = (outline: string) => {
+    setOutlineData(outline);
+  };
+
   return (
     <main className="h-screen bg-gradient-to-br from-slate-50/80 via-white to-slate-100/60 flex flex-col">
       {/* Navigation */}
@@ -334,16 +325,14 @@ export default function WorkspacePage() {
 
             {/* Right - User Profile & Status (Fixed Width) */}
             <div className="w-48 flex items-center justify-end space-x-4 flex-shrink-0">
-              <div className="text-sm text-gray-800 whitespace-nowrap">
-                {isSaving ? (
-                  <span className="flex items-center space-x-2">
-                    <div className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse" />
-                    <span>저장 중...</span>
-                  </span>
-                ) : lastSaved ? (
-                  <span className="flex items-center space-x-2">
-                    <div className="w-2 h-2 bg-green-500 rounded-full" />
-                    <span>저장됨 {lastSaved.toLocaleTimeString()}</span>
+              <div className="text-xs text-gray-400 whitespace-nowrap">
+                {showSavedMessage && lastSaved ? (
+                  <span>
+                    저장됨{" "}
+                    {lastSaved.toLocaleTimeString("ko-KR", {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
                   </span>
                 ) : null}
               </div>
@@ -474,6 +463,8 @@ export default function WorkspacePage() {
             showToolbar={true}
             showOutline={true}
             showAiChat={true}
+            documentId={documentId}
+            outlineData={outlineData}
           />
         </motion.div>
       </div>
@@ -482,7 +473,7 @@ export default function WorkspacePage() {
       <OnboardingModal
         isOpen={showOnboarding}
         onClose={() => setShowOnboarding(false)}
-        onSelectMode={handleModeSelect}
+        onOutlineConfirm={handleOutlineConfirm}
       />
     </main>
   );
