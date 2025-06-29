@@ -270,7 +270,7 @@ export function AiSidebar({ className, documentId }: AiSidebarProps) {
                   )
                 );
               }
-            } catch (parseError) {
+            } catch {
               // JSON 파싱 에러는 무시 (불완전한 데이터일 수 있음)
               continue;
             }

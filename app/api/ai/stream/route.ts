@@ -1,10 +1,21 @@
 import { NextRequest } from "next/server";
 import { getAiService } from "@/lib/anthropic";
-import { ChatMessage } from "@/lib/chat-history";
+
+// 대화 메시지 타입 정의
+interface ConversationMessage {
+  role: "user" | "assistant";
+  content: string;
+}
+
+// 요청 바디 타입 정의
+interface RequestBody {
+  message: string;
+  conversationHistory?: unknown[];
+}
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
+    const body: RequestBody = await request.json();
     const { message, conversationHistory = [] } = body;
 
     // 메시지 검증
@@ -15,18 +26,24 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    // 메시지가 ConversationMessage 타입인지 확인하는 타입 가드 함수
+    const isValidMessage = (msg: unknown): msg is ConversationMessage => {
+      return (
+        msg !== null &&
+        typeof msg === "object" &&
+        "role" in msg &&
+        "content" in msg &&
+        ["user", "assistant"].includes((msg as ConversationMessage).role) &&
+        typeof (msg as ConversationMessage).content === "string" &&
+        (msg as ConversationMessage).content.trim().length > 0
+      );
+    };
+
     // 대화 히스토리 검증 및 변환
-    const validHistory = Array.isArray(conversationHistory)
-      ? conversationHistory
-          .filter(
-            (msg: any) =>
-              msg &&
-              typeof msg === "object" &&
-              ["user", "assistant"].includes(msg.role) &&
-              typeof msg.content === "string" &&
-              msg.content.trim().length > 0
-          )
-          .slice(-10) // 최근 10개만 사용
+    const validHistory: ConversationMessage[] = Array.isArray(
+      conversationHistory
+    )
+      ? conversationHistory.filter(isValidMessage).slice(-10) // 최근 10개만 사용
       : [];
 
     // AI 서비스 호출

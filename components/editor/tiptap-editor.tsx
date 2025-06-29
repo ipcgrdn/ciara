@@ -48,7 +48,7 @@ const FontSize = Extension.create({
               const fontSize = element.style.fontSize;
               return fontSize ? fontSize.replace(/['"]+/g, "") : null;
             },
-            renderHTML: (attributes: Record<string, any>) => {
+            renderHTML: (attributes: Record<string, string | null>) => {
               const fontSize = attributes.fontSize;
               if (!fontSize || typeof fontSize !== "string") {
                 return {};

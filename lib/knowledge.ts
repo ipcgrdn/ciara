@@ -134,7 +134,7 @@ export async function uploadKnowledgeFile(
     const storagePath = `${user.id}/${knowledgeData.document_id}/${uniqueFilename}`;
 
     // 4. Supabase Storage에 파일 업로드
-    const { data: uploadData, error: uploadError } = await supabase.storage
+    const { error: uploadError } = await supabase.storage
       .from("knowledge-files")
       .upload(storagePath, file);
 
