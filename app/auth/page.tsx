@@ -175,7 +175,7 @@ export default function AuthPage() {
                       className="space-y-3 pt-4 border-t border-white/10"
                     >
                       <p className="text-white/60 text-xs text-center mb-4">
-                        What you'll get with CLARA:
+                        What you&apos;ll get with CLARA:
                       </p>
                       <div className="space-y-2">
                         {[

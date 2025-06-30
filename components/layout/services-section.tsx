@@ -231,7 +231,7 @@ const ServicesSection: React.FC = () => {
             className="text-left mb-12 lg:mb-20"
           >
             <p className="text-white text-xl lg:text-2xl leading-relaxed font-montserrat font-normal max-w-4xl">
-              We've shattered the context window. Finally, an AI that
+              We&apos;ve shattered the context window. Finally, an AI that
               understands your entire manuscript from introduction to
               conclusion. &ldquo;Writing has never felt this natural and
               powerful.&rdquo;
