@@ -3,54 +3,11 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-// 마크다운을 파싱하는 간단한 함수
-interface OutlineItem {
-  id: string;
-  level: number;
-  title: string;
-}
-
-function parseMarkdownOutline(markdown: string): OutlineItem[] {
-  if (!markdown.trim()) return [];
-
-  const lines = markdown.split("\n");
-  const items: OutlineItem[] = [];
-
-  lines.forEach((line, index) => {
-    const trimmedLine = line.trim();
-
-    if (trimmedLine.startsWith("# ")) {
-      items.push({
-        id: `outline-${Date.now()}-${index}`,
-        level: 1,
-        title: trimmedLine
-          .replace(/^# (\d+\.\s*)?/, "")
-          .replace(/\s*\([^)]*\)$/, "")
-          .trim(),
-      });
-    } else if (trimmedLine.startsWith("## ")) {
-      items.push({
-        id: `outline-${Date.now()}-${index}`,
-        level: 2,
-        title: trimmedLine
-          .replace(/^## (\d+\.\d+\s*)?/, "")
-          .replace(/\s*\([^)]*\)$/, "")
-          .trim(),
-      });
-    } else if (trimmedLine.startsWith("### ")) {
-      items.push({
-        id: `outline-${Date.now()}-${index}`,
-        level: 3,
-        title: trimmedLine
-          .replace(/^### (\d+\.\d+\.\d+\s*)?/, "")
-          .replace(/\s*\([^)]*\)$/, "")
-          .trim(),
-      });
-    }
-  });
-
-  return items;
-}
+import {
+  parseMarkdownToOutline,
+  getDocumentIndex,
+  saveDocumentIndex,
+} from "@/lib/index";
 import {
   Save,
   Share2,
@@ -69,6 +26,7 @@ import {
   Edit3,
   Check,
 } from "lucide-react";
+import { OutlineEditModal } from "./outline-edit-modal";
 import {
   KnowledgeItem,
   getKnowledgeByDocumentId,
@@ -85,14 +43,17 @@ interface IndexSidebarProps {
   className?: string;
   documentId: string; // 현재 문서 ID
   outlineData?: string;
+  onOutlineChange?: (outline: string) => void; // 목차 변경 콜백
 }
 
 export function IndexSidebar({
   className,
   documentId,
   outlineData = "",
+  onOutlineChange,
 }: IndexSidebarProps) {
-  const outline = parseMarkdownOutline(outlineData);
+  const [currentOutlineData, setCurrentOutlineData] = useState(outlineData);
+  const outline = parseMarkdownToOutline(currentOutlineData);
 
   // localStorage에서 너비 설정 불러오기
   const [width, setWidth] = useState(() => {
@@ -112,6 +73,7 @@ export function IndexSidebar({
   const [error, setError] = useState<string | null>(null);
   const [editingTagId, setEditingTagId] = useState<string | null>(null);
   const [editingTagValue, setEditingTagValue] = useState("");
+  const [isOutlineModalOpen, setIsOutlineModalOpen] = useState(false);
   const sidebarRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -126,12 +88,18 @@ export function IndexSidebar({
     }
   }, []);
 
-  // 문서 ID가 변경될 때마다 knowledge 파일들 로드
+  // 문서 ID가 변경될 때마다 knowledge 파일들과 목차 로드
   useEffect(() => {
     if (documentId) {
       loadKnowledgeItems();
+      loadDocumentOutline();
     }
   }, [documentId]);
+
+  // 목차 데이터가 외부에서 변경될 때 반영
+  useEffect(() => {
+    setCurrentOutlineData(outlineData);
+  }, [outlineData]);
 
   // Knowledge 파일들 로드
   const loadKnowledgeItems = useCallback(async () => {
@@ -147,6 +115,33 @@ export function IndexSidebar({
       setIsLoading(false);
     }
   }, [documentId]);
+
+  // 문서 목차 로드
+  const loadDocumentOutline = useCallback(async () => {
+    try {
+      const indexData = await getDocumentIndex(documentId);
+      if (indexData && indexData.outline_markdown) {
+        setCurrentOutlineData(indexData.outline_markdown);
+      }
+    } catch (error) {
+      console.error("Error loading document outline:", error);
+    }
+  }, [documentId]);
+
+  // 목차 저장
+  const handleSaveOutline = useCallback(
+    async (newOutline: string) => {
+      try {
+        await saveDocumentIndex(documentId, newOutline);
+        setCurrentOutlineData(newOutline);
+        onOutlineChange?.(newOutline);
+      } catch (error) {
+        console.error("Error saving document outline:", error);
+        setError("목차 저장에 실패했습니다.");
+      }
+    },
+    [documentId, onOutlineChange]
+  );
 
   const handleMouseDown = useCallback(
     (e: React.MouseEvent) => {
@@ -540,23 +535,29 @@ export function IndexSidebar({
                 : "flex-none"
             )}
           >
-            <button
-              onClick={() => setIsIndexExpanded(!isIndexExpanded)}
-              className="w-full p-4 flex items-center gap-2 hover:bg-slate-100/50 transition-colors flex-none"
-            >
-              {isIndexExpanded ? (
-                <ChevronDown className="w-4 h-4 text-slate-600" />
-              ) : (
-                <ChevronRight className="w-4 h-4 text-slate-600" />
-              )}
-              <List className="w-4 h-4 text-slate-600" />
-              <span className="text-sm font-medium text-slate-700">Index</span>
-              {outline.length > 0 && (
-                <span className="ml-auto text-xs bg-slate-200 text-slate-600 px-2 py-1 rounded-full">
-                  {outline.length}
+            <div className="w-full p-4 flex items-center gap-2 flex-none">
+              <button
+                onClick={() => setIsIndexExpanded(!isIndexExpanded)}
+                className="flex items-center gap-2 hover:bg-slate-100/50 transition-colors rounded-lg p-1 -m-1 flex-1"
+              >
+                {isIndexExpanded ? (
+                  <ChevronDown className="w-4 h-4 text-slate-600" />
+                ) : (
+                  <ChevronRight className="w-4 h-4 text-slate-600" />
+                )}
+                <List className="w-4 h-4 text-slate-600" />
+                <span className="text-sm font-medium text-slate-700">
+                  Index
                 </span>
-              )}
-            </button>
+              </button>
+              <button
+                onClick={() => setIsOutlineModalOpen(true)}
+                className="p-1.5 hover:bg-slate-100/50 rounded-lg transition-colors"
+                title="목차 편집"
+              >
+                <Edit3 className="w-4 h-4 text-slate-600" />
+              </button>
+            </div>
             {isIndexExpanded && (
               <div className="px-4 pb-4 flex-1 flex flex-col min-h-0">
                 <div className="bg-white/60 rounded-lg border border-slate-200/40 p-3 flex-1 flex flex-col min-h-0">
@@ -610,6 +611,14 @@ export function IndexSidebar({
           <div className="absolute inset-y-0 left-1/2 transform -translate-x-1/2 w-0.5 bg-transparent hover:bg-yellow-300/50 transition-all duration-300" />
         </div>
       </div>
+
+      {/* 목차 편집 모달 */}
+      <OutlineEditModal
+        isOpen={isOutlineModalOpen}
+        onClose={() => setIsOutlineModalOpen(false)}
+        onSave={handleSaveOutline}
+        initialOutline={currentOutlineData}
+      />
     </div>
   );
 }
