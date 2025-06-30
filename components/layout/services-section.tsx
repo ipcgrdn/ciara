@@ -223,8 +223,8 @@ const ServicesSection: React.FC = () => {
           >
             <p className="text-white text-xl lg:text-2xl leading-relaxed font-montserrat font-normal max-w-4xl">
               functionality, and cutting-edge technology, we provide a
-              comprehensive online experience that adapts to your needs. "Now,
-              writing documents is easier and more effortless than ever."
+              comprehensive online experience that adapts to your needs. &ldquo;Now,
+              writing documents is easier and more effortless than ever.&rdquo;
             </p>
           </motion.div>
 

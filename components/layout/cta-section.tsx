@@ -34,7 +34,7 @@ export default function CTASection() {
           viewport={{ once: true }}
           className="text-white text-center text-4xl md:text-6xl lg:text-7xl font-semibold mb-8 max-w-6xl leading-tight font-montserrat"
         >
-          Let's make this official, sign up
+          Let&apos;s make this official, sign up
           <br />
           and access the vault
         </motion.h2>
