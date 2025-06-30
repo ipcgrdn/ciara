@@ -9,45 +9,45 @@ const TestimonialsSection: React.FC = () => {
   const testimonials = [
     {
       quote:
-        "I've tried several AI writing tools, but this one really stands out. It's intuitive, fast, and produces surprisingly natural-sounding text.",
-      name: "Amy Yang",
-      title: "GRAPHIC DESIGNER",
+        "CLARA completely transformed my thesis writing. The AI actually remembers conversations from weeks ago and builds on them. It's like having a brilliant research partner.",
+      name: "Dr. Sarah Chen",
+      title: "PhD RESEARCHER",
     },
     {
       quote:
-        "The AI-powered features have completely transformed my writing workflow. I can focus on creativity while the tool handles the technical aspects.",
-      name: "John Smith",
-      title: "CONTENT WRITER",
+        "I wrote a 200-page technical report with CLARA. The consistency across chapters was perfect - it understood the entire document structure throughout the process.",
+      name: "Marcus Johnson",
+      title: "SENIOR ENGINEER",
     },
     {
       quote:
-        "Clara has become an essential part of my daily routine. The quality of output is consistently impressive and saves me hours of work.",
-      name: "Sarah Johnson",
-      title: "MARKETING MANAGER",
+        "As a novelist, I need my AI to understand character arcs and plot threads. CLARA's file management and persistent memory make complex storytelling effortless.",
+      name: "Elena Rodriguez",
+      title: "BESTSELLING AUTHOR",
     },
     {
       quote:
-        "As a developer, I appreciate how Clara understands context and helps me write better documentation and comments.",
-      name: "Mike Chen",
-      title: "SOFTWARE ENGINEER",
-    },
-    {
-      quote:
-        "The user interface is clean and intuitive. Even non-technical team members can use it effectively.",
-      name: "Lisa Brown",
-      title: "PROJECT MANAGER",
-    },
-    {
-      quote:
-        "Clara's AI suggestions are remarkably accurate and help me maintain consistency across all my writing projects.",
-      name: "David Wilson",
+        "Finally, an AI that doesn't forget what we discussed yesterday. The conversation history feature alone saves me hours of re-explaining context.",
+      name: "David Kim",
       title: "TECHNICAL WRITER",
     },
     {
       quote:
-        "The collaborative features make it easy to work with my team. We can share projects and maintain our brand voice effortlessly.",
-      name: "Emma Davis",
-      title: "CREATIVE DIRECTOR",
+        "The interface feels like Cursor but for writing. Intuitive, powerful, and clearly built by people who understand long-form content creation.",
+      name: "Jessica Park",
+      title: "CONTENT STRATEGIST",
+    },
+    {
+      quote:
+        "CLARA's outline indexing changed everything. I can jump between sections and the AI instantly understands where I am in my document structure.",
+      name: "Prof. Michael Zhang",
+      title: "ACADEMIC RESEARCHER",
+    },
+    {
+      quote:
+        "The knowledge management system is incredible. All my research materials in one place, perfectly organized, and instantly accessible during writing.",
+      name: "Lisa Thompson",
+      title: "SCIENCE JOURNALIST",
     },
   ];
 
@@ -61,20 +61,26 @@ const TestimonialsSection: React.FC = () => {
   ];
 
   return (
-    <section className="relative bg-black py-16 lg:py-24">
-      <div className="container mx-auto px-6 lg:px-16 xl:px-24">
+    <section className="relative bg-black py-12 sm:py-16 lg:py-24">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-16 xl:px-24">
         {/* Main heading */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
           viewport={{ once: true }}
-          className="text-center mb-12 lg:mb-16"
+          className="text-center mb-8 sm:mb-12 lg:mb-16"
         >
-          <h2 className="text-white text-3xl lg:text-5xl xl:text-6xl font-montserrat font-semibold leading-tight">
-            We built Clara to help
+          <h2
+            className="text-white font-montserrat font-semibold leading-tight"
+            style={{
+              fontSize: "clamp(1.5rem, 6vw, 3.75rem)",
+              lineHeight: "1.2",
+            }}
+          >
+            Writers who switched to CLARA
             <br />
-            creative developers work better.
+            never looked back
           </h2>
         </motion.div>
 
@@ -84,13 +90,13 @@ const TestimonialsSection: React.FC = () => {
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.2 }}
           viewport={{ once: true }}
-          className="flex flex-col items-center mb-12 lg:mb-16"
+          className="flex flex-col items-center mb-8 sm:mb-12 lg:mb-16"
         >
           {/* Decorative line */}
-          <div className="relative w-full h-px bg-gradient-to-r from-transparent via-white/20 to-transparent mb-8"></div>
+          <div className="relative w-full h-px bg-gradient-to-r from-transparent via-white/20 to-transparent mb-6 sm:mb-8"></div>
 
-          <p className="text-white text-lg lg:text-2xl font-montserrat mb-8">
-            Review by :
+          <p className="text-white text-base sm:text-lg lg:text-2xl font-montserrat mb-6 sm:mb-8">
+            Loved by creators worldwide :
           </p>
 
           {/* Avatar Circles */}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useAuth } from "@/contexts/AuthContext";
+import Loading from "@/components/layout/loading";
 import Header from "@/components/layout/header";
 import HeroSection from "@/components/layout/hero-section";
 import ServicesSection from "@/components/layout/services-section";
@@ -13,15 +14,7 @@ export default function LandingPage() {
   const { loading } = useAuth();
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-8 h-8 bg-white/20 border border-white/30 rounded-lg flex items-center justify-center mx-auto mb-4">
-            <span className="text-white text-sm font-bold">C</span>
-          </div>
-        </div>
-      </div>
-    );
+    return <Loading />;
   }
 
   return (

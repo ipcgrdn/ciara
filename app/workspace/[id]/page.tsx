@@ -201,20 +201,7 @@ export default function WorkspacePage() {
     }
   };
 
-  if (loading || isLoadingDocument) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50/80 via-white to-slate-100/60 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-8 h-8 backdrop-blur-md bg-white/20 border border-white/30 rounded-lg flex items-center justify-center mx-auto mb-4 animate-spin">
-            <span className="text-black text-sm font-bold">C</span>
-          </div>
-          <p className="text-gray-800">
-            {loading ? "로딩 중..." : "문서를 불러오는 중..."}
-          </p>
-        </div>
-      </div>
-    );
-  }
+  if (loading || isLoadingDocument) return null;
 
   if (!user) {
     return null; // 리다이렉트 처리 중
@@ -222,11 +209,11 @@ export default function WorkspacePage() {
 
   if (documentNotFound) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50/80 via-white to-slate-100/60 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-20 h-20 backdrop-blur-md bg-white/20 border border-white/30 rounded-2xl flex items-center justify-center mx-auto mb-6">
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-center max-w-md mx-auto px-6">
+          <div className="w-24 h-24 bg-gray-50 rounded-3xl flex items-center justify-center mx-auto mb-8">
             <svg
-              className="w-10 h-10 text-gray-600"
+              className="w-12 h-12 text-gray-400"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -247,24 +234,22 @@ export default function WorkspacePage() {
               <circle cx="12" cy="12" r="1" fill="currentColor" />
             </svg>
           </div>
-          <h2 className="text-2xl font-medium text-black mb-2">
+          <h2 className="text-2xl font-bold font-montserrat text-black mb-4">
             문서를 찾을 수 없습니다
           </h2>
-          <p className="text-gray-800 mb-6 max-w-md">
+          <p className="text-gray-600 mb-8 leading-relaxed">
             요청하신 문서가 존재하지 않거나 접근 권한이 없습니다.
-            <br />
-            대시보드로 이동하시겠습니까?
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <Link href="/dashboard">
-              <Button className="backdrop-blur-sm bg-black/80 hover:bg-black text-white border-0 px-6 py-2">
+              <Button className="bg-black text-white px-8 py-3 rounded-xl font-medium transition-colors duration-200">
                 대시보드로 이동
               </Button>
             </Link>
             <Button
               variant="outline"
               onClick={() => router.back()}
-              className="backdrop-blur-sm bg-white/20 hover:bg-white/30 text-black border-white/30 px-6 py-2"
+              className="border-gray-200 text-gray-700 hover:bg-gray-50 px-8 py-3 rounded-xl font-medium transition-colors duration-200"
             >
               이전 페이지로
             </Button>
@@ -276,16 +261,18 @@ export default function WorkspacePage() {
 
   if (!document) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50/80 via-white to-slate-100/60 flex items-center justify-center">
-        <div className="text-center">
-          <h2 className="text-2xl font-medium text-black mb-2">
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-center max-w-md mx-auto px-6">
+          <h2 className="text-2xl font-bold font-montserrat text-black mb-4">
             문서를 불러올 수 없습니다
           </h2>
-          <p className="text-gray-800 mb-4">
+          <p className="text-gray-600 mb-8 leading-relaxed">
             문서를 불러오는 중 오류가 발생했습니다.
           </p>
           <Link href="/dashboard">
-            <Button>대시보드로 돌아가기</Button>
+            <Button className="bg-black text-white px-8 py-3 rounded-xl font-medium transition-colors duration-200">
+              대시보드로 돌아가기
+            </Button>
           </Link>
         </div>
       </div>
@@ -296,36 +283,42 @@ export default function WorkspacePage() {
     setOutlineData(outline);
   };
 
+  // 사용자 프로필 이미지 URL 가져오기
+  const userProfileImage =
+    user.user_metadata?.avatar_url || user.user_metadata?.picture;
+  const userName =
+    user.user_metadata?.name || user.user_metadata?.full_name || user.email;
+
   return (
-    <main className="h-screen bg-gradient-to-br from-slate-50/80 via-white to-slate-100/60 flex flex-col">
+    <main className="h-screen bg-white flex flex-col">
       {/* Navigation */}
-      <nav className="relative z-50 backdrop-blur-sm bg-white/10 border-b border-black/10 flex-shrink-0">
-        <div className="container mx-auto px-4 py-2">
-          <div className="flex items-center">
-            {/* Left - Logo (Fixed Width) */}
-            <div className="w-48 flex-shrink-0">
-              <Link href="/dashboard" className="flex items-center space-x-3">
-                <div className="w-8 h-8 backdrop-blur-md bg-white/20 border border-white/30 rounded-lg flex items-center justify-center">
-                  <span className="text-black text-sm font-bold">C</span>
-                </div>
-                <span className="text-2xl font-light text-black">CLARA</span>
+      <nav className="border-b border-gray-100 flex-shrink-0 sticky top-0 z-50 bg-white/80 backdrop-blur-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center h-16">
+            {/* Left - Back to Dashboard & Logo */}
+            <div className="flex flex-shrink-0">
+              <Link href="/" className="flex items-center space-x-3">
+                <span className="text-xl font-bold font-montserrat text-black tracking-wider">
+                  ＣＬＡＲＡ
+                </span>
               </Link>
             </div>
 
-            {/* Center - Document Title (Flex Grow) */}
-            <div className="flex-1 text-center">
+            {/* Center - Document Title */}
+            <div className="flex-1 text-center px-6">
               <input
                 type="text"
                 value={document.title}
                 onChange={(e) => handleTitleChange(e.target.value)}
-                className="text-md font-medium text-black bg-transparent border-none outline-none text-center placeholder-gray-400 w-full max-w-md mx-auto"
+                className="text-lg font-semibold font-montserrat text-black bg-transparent border-none outline-none text-center placeholder-gray-400 w-full max-w-md mx-auto focus:bg-gray-50 rounded-lg px-4 py-2 transition-all duration-200"
                 placeholder="문서 제목을 입력하세요..."
               />
             </div>
 
-            {/* Right - User Profile & Status (Fixed Width) */}
-            <div className="w-48 flex items-center justify-end space-x-4 flex-shrink-0">
-              <div className="text-xs text-gray-400 whitespace-nowrap">
+            {/* Right - Save Status & Profile */}
+            <div className="flex items-center space-x-4 flex-shrink-0">
+              {/* Save Status */}
+              <div className="text-xs text-gray-500 whitespace-nowrap">
                 {showSavedMessage && lastSaved ? (
                   <span>
                     저장됨{" "}
@@ -339,109 +332,98 @@ export default function WorkspacePage() {
 
               {/* Profile Dropdown */}
               <div className="relative" data-profile-dropdown>
-                <div
-                  className="flex items-center p-2 rounded-lg hover:bg-white/20 transition-all duration-200 cursor-pointer"
-                  onMouseEnter={() => setIsProfileDropdownOpen(true)}
-                  onMouseLeave={() => setIsProfileDropdownOpen(false)}
+                <button
+                  className="flex items-center space-x-3 p-2 rounded-xl hover:bg-gray-50 transition-all duration-200"
+                  onClick={() =>
+                    setIsProfileDropdownOpen(!isProfileDropdownOpen)
+                  }
                 >
-                  {user.user_metadata?.avatar_url ||
-                  user.user_metadata?.picture ? (
+                  {userProfileImage ? (
                     <Image
-                      src={
-                        user.user_metadata?.avatar_url ||
-                        user.user_metadata?.picture
-                      }
+                      src={userProfileImage}
                       alt="Profile"
-                      className="w-8 h-8 rounded-full object-cover border-2 border-white/30"
+                      className="w-8 h-8 rounded-full object-cover"
                       width={32}
                       height={32}
                     />
                   ) : (
-                    <div className="w-8 h-8 backdrop-blur-md bg-white/20 border border-white/30 rounded-full flex items-center justify-center">
-                      <UserIcon className="h-4 w-4 text-black" />
+                    <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
+                      <UserIcon className="h-4 w-4 text-gray-600" />
                     </div>
                   )}
+                </button>
 
-                  {/* Dropdown Menu */}
-                  <AnimatePresence>
-                    {isProfileDropdownOpen && (
-                      <motion.div
-                        initial={{ opacity: 0, scale: 0.95, y: -10 }}
-                        animate={{ opacity: 1, scale: 1, y: 0 }}
-                        exit={{ opacity: 0, scale: 0.95, y: -10 }}
-                        transition={{ duration: 0.2 }}
-                        className="absolute right-0 top-full mt-2 w-56 backdrop-blur-md bg-white/95 border border-white/30 rounded-lg shadow-2xl z-[60]"
-                        onMouseEnter={() => setIsProfileDropdownOpen(true)}
-                        onMouseLeave={() => setIsProfileDropdownOpen(false)}
-                      >
-                        <div className="p-3 border-b border-white/20">
-                          <div className="flex items-center space-x-3">
-                            {user.user_metadata?.avatar_url ||
-                            user.user_metadata?.picture ? (
-                              <Image
-                                src={
-                                  user.user_metadata?.avatar_url ||
-                                  user.user_metadata?.picture
-                                }
-                                alt="Profile"
-                                className="w-10 h-10 rounded-full object-cover"
-                                width={40}
-                                height={40}
-                              />
-                            ) : (
-                              <div className="w-10 h-10 backdrop-blur-md bg-white/20 border border-white/30 rounded-full flex items-center justify-center">
-                                <UserIcon className="h-5 w-5 text-black" />
-                              </div>
-                            )}
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm font-medium text-black truncate">
-                                {user.user_metadata?.name ||
-                                  user.user_metadata?.full_name ||
-                                  user.email}
-                              </p>
-                              <p className="text-xs text-gray-800 truncate">
-                                {user.email}
-                              </p>
+                {/* Profile Dropdown Menu */}
+                <AnimatePresence>
+                  {isProfileDropdownOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                      transition={{ duration: 0.2 }}
+                      className="absolute right-0 top-full mt-2 w-64 bg-white border border-gray-200 rounded-xl shadow-lg z-[60]"
+                    >
+                      <div className="p-4 border-b border-gray-100">
+                        <div className="flex items-center space-x-3">
+                          {userProfileImage ? (
+                            <Image
+                              src={userProfileImage}
+                              alt="Profile"
+                              className="w-12 h-12 rounded-full object-cover"
+                              width={48}
+                              height={48}
+                            />
+                          ) : (
+                            <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center">
+                              <UserIcon className="h-6 w-6 text-gray-600" />
                             </div>
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-gray-900 truncate">
+                              {userName}
+                            </p>
+                            <p className="text-xs text-gray-500 truncate">
+                              {user.email}
+                            </p>
                           </div>
                         </div>
+                      </div>
 
-                        <div className="p-2">
-                          <button className="w-full flex items-center space-x-3 px-3 py-2 text-sm text-black hover:bg-white/20 rounded-md transition-colors">
-                            <Cog6ToothIcon className="h-4 w-4" />
-                            <span>계정 설정</span>
-                          </button>
-                          <button className="w-full flex items-center space-x-3 px-3 py-2 text-sm text-black hover:bg-white/20 rounded-md transition-colors">
-                            <UserIcon className="h-4 w-4" />
-                            <span>프로필 관리</span>
-                          </button>
+                      <div className="p-2">
+                        <button className="w-full flex items-center space-x-3 px-3 py-2.5 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors">
+                          <Cog6ToothIcon className="h-4 w-4" />
+                          <span>계정 설정</span>
+                        </button>
+                        <button className="w-full flex items-center space-x-3 px-3 py-2.5 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors">
+                          <UserIcon className="h-4 w-4" />
+                          <span>프로필 관리</span>
+                        </button>
 
-                          <div className="border-t border-white/20 mt-2 pt-2">
-                            <button
-                              onClick={signOut}
-                              className="w-full flex items-center space-x-3 px-3 py-2 text-sm text-red-600 hover:bg-red-50/50 rounded-md transition-colors"
+                        <div className="border-t border-gray-100 mt-2 pt-2">
+                          <button
+                            onClick={signOut}
+                            className="w-full flex items-center space-x-3 px-3 py-2.5 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                          >
+                            <svg
+                              className="h-4 w-4"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
                             >
-                              <svg
-                                className="h-4 w-4"
-                                fill="none"
-                                viewBox="0 0 24 24"
-                                stroke="currentColor"
-                              >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={2}
-                                  d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
-                                />
-                              </svg>
-                              <span>로그아웃</span>
-                            </button>
-                          </div>
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+                              />
+                            </svg>
+                            <span>로그아웃</span>
+                          </button>
                         </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             </div>
           </div>
@@ -458,7 +440,7 @@ export default function WorkspacePage() {
         >
           <TiptapEditor
             content={document.content}
-            placeholder="여기서 문서 작성을 시작하세요... AI가 도워드립니다!"
+            placeholder="여기서 문서 작성을 시작하세요... AI가 도와드립니다!"
             onContentChange={handleContentChange}
             showToolbar={true}
             showOutline={true}

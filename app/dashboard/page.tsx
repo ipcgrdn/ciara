@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import Link from "next/link";
 import { v4 as uuidv4 } from "uuid";
 import {
@@ -15,6 +15,10 @@ import {
   EllipsisVerticalIcon,
   PencilIcon,
   TrashIcon,
+  DocumentTextIcon,
+  ClockIcon,
+  ArrowRightIcon,
+  ArrowUpTrayIcon,
 } from "@heroicons/react/24/outline";
 import Image from "next/image";
 import {
@@ -24,6 +28,7 @@ import {
   formatLastModified,
   type Document,
 } from "@/lib/documents";
+import Loading from "@/components/layout/loading";
 
 // HTML/마크다운 태그를 제거하고 순수 텍스트만 추출하는 함수
 function stripHtmlAndMarkdown(text: string): string {
@@ -198,18 +203,7 @@ export default function DashboardPage() {
     };
   }, [editingDocumentId]);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50/80 via-white to-slate-100/60 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-8 h-8 backdrop-blur-md bg-white/20 border border-white/30 rounded-lg flex items-center justify-center mx-auto mb-4">
-            <span className="text-black text-sm font-bold">C</span>
-          </div>
-          <p className="text-gray-800">로딩 중...</p>
-        </div>
-      </div>
-    );
-  }
+  if (loading) return <Loading />;
 
   if (!user) {
     return null; // 리다이렉트 처리 중
@@ -222,333 +216,344 @@ export default function DashboardPage() {
     user.user_metadata?.name || user.user_metadata?.full_name || user.email;
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-slate-50/80 via-white to-slate-100/60">
+    <main className="min-h-screen bg-white">
       {/* Navigation */}
-      <nav className="backdrop-blur-sm bg-white/10 border-b border-white/20 relative z-40">
-        <div className="container mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
+      <nav className="border-b border-gray-100 sticky top-0 z-40 backdrop-blur-sm bg-white/80">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16">
+            {/* Logo */}
             <Link href="/" className="flex items-center space-x-3">
-              <div className="w-8 h-8 backdrop-blur-md bg-white/20 border border-white/30 rounded-lg flex items-center justify-center">
-                <span className="text-black text-sm font-bold">C</span>
-              </div>
-              <span className="text-2xl font-light text-black">CLARA</span>
+              <span className="text-2xl font-bold font-montserrat text-black tracking-wider">
+                ＣＬＡＲＡ
+              </span>
             </Link>
 
-            <div className="flex items-center space-x-6">
-              {/* Profile Dropdown */}
+            {/* Profile Section */}
+            <div className="flex items-center space-x-4">
               <div className="relative" data-profile-dropdown>
-                <div
-                  className="flex items-center p-2 rounded-lg hover:bg-white/20 transition-all duration-200 cursor-pointer"
-                  onMouseEnter={() => setIsProfileDropdownOpen(true)}
-                  onMouseLeave={() => setIsProfileDropdownOpen(false)}
+                <button
+                  className="flex items-center space-x-3 p-2 rounded-xl hover:bg-gray-50 transition-all duration-200"
+                  onClick={() =>
+                    setIsProfileDropdownOpen(!isProfileDropdownOpen)
+                  }
                 >
                   {userProfileImage ? (
                     <Image
                       src={userProfileImage}
                       alt="Profile"
-                      className="w-8 h-8 rounded-full object-cover border-2 border-white/30"
+                      className="w-8 h-8 rounded-full object-cover"
                       width={32}
                       height={32}
                     />
                   ) : (
-                    <div className="w-8 h-8 backdrop-blur-md bg-white/20 border border-white/30 rounded-full flex items-center justify-center">
-                      <UserIcon className="h-4 w-4 text-black" />
+                    <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
+                      <UserIcon className="h-4 w-4 text-gray-600" />
                     </div>
                   )}
+                </button>
 
-                  {/* Dropdown Menu */}
-                  <AnimatePresence>
-                    {isProfileDropdownOpen && (
-                      <motion.div
-                        initial={{ opacity: 0, scale: 0.95, y: -10 }}
-                        animate={{ opacity: 1, scale: 1, y: 0 }}
-                        exit={{ opacity: 0, scale: 0.95, y: -10 }}
-                        transition={{ duration: 0.2 }}
-                        className="absolute right-0 top-full mt-2 w-56 backdrop-blur-md bg-white/95 border border-white/30 rounded-lg shadow-2xl z-[9999]"
-                        onMouseEnter={() => setIsProfileDropdownOpen(true)}
-                        onMouseLeave={() => setIsProfileDropdownOpen(false)}
-                      >
-                        <div className="p-3 border-b border-white/20">
-                          <div className="flex items-center space-x-3">
-                            {userProfileImage ? (
-                              <Image
-                                src={userProfileImage}
-                                alt="Profile"
-                                className="w-10 h-10 rounded-full object-cover"
-                                width={40}
-                                height={40}
-                              />
-                            ) : (
-                              <div className="w-10 h-10 backdrop-blur-md bg-white/20 border border-white/30 rounded-full flex items-center justify-center">
-                                <UserIcon className="h-5 w-5 text-black" />
-                              </div>
-                            )}
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm font-medium text-black truncate">
-                                {userName}
-                              </p>
-                              <p className="text-xs text-gray-800 truncate">
-                                {user.email}
-                              </p>
+                {/* Profile Dropdown */}
+                <AnimatePresence>
+                  {isProfileDropdownOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                      transition={{ duration: 0.2 }}
+                      className="absolute right-0 top-full mt-2 w-64 bg-white border border-gray-200 rounded-xl shadow-lg z-[9999]"
+                    >
+                      <div className="p-4 border-b border-gray-100">
+                        <div className="flex items-center space-x-3">
+                          {userProfileImage ? (
+                            <Image
+                              src={userProfileImage}
+                              alt="Profile"
+                              className="w-12 h-12 rounded-full object-cover"
+                              width={48}
+                              height={48}
+                            />
+                          ) : (
+                            <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center">
+                              <UserIcon className="h-6 w-6 text-gray-600" />
                             </div>
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-gray-900 truncate">
+                              {userName}
+                            </p>
+                            <p className="text-xs text-gray-500 truncate">
+                              {user.email}
+                            </p>
                           </div>
                         </div>
+                      </div>
 
-                        <div className="p-2">
-                          <button className="w-full flex items-center space-x-3 px-3 py-2 text-sm text-black hover:bg-white/20 rounded-md transition-colors">
-                            <Cog6ToothIcon className="h-4 w-4" />
-                            <span>계정 설정</span>
-                          </button>
-                          <button className="w-full flex items-center space-x-3 px-3 py-2 text-sm text-black hover:bg-white/20 rounded-md transition-colors">
-                            <UserIcon className="h-4 w-4" />
-                            <span>프로필 관리</span>
-                          </button>
+                      <div className="p-2">
+                        <button className="w-full flex items-center space-x-3 px-3 py-2.5 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors">
+                          <Cog6ToothIcon className="h-4 w-4" />
+                          <span>계정 설정</span>
+                        </button>
+                        <button className="w-full flex items-center space-x-3 px-3 py-2.5 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors">
+                          <UserIcon className="h-4 w-4" />
+                          <span>프로필 관리</span>
+                        </button>
 
-                          <div className="border-t border-white/20 mt-2 pt-2">
-                            <button
-                              onClick={signOut}
-                              className="w-full flex items-center space-x-3 px-3 py-2 text-sm text-red-600 hover:bg-red-50/50 rounded-md transition-colors"
+                        <div className="border-t border-gray-100 mt-2 pt-2">
+                          <button
+                            onClick={signOut}
+                            className="w-full flex items-center space-x-3 px-3 py-2.5 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                          >
+                            <svg
+                              className="h-4 w-4"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
                             >
-                              <svg
-                                className="h-4 w-4"
-                                fill="none"
-                                viewBox="0 0 24 24"
-                                stroke="currentColor"
-                              >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={2}
-                                  d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
-                                />
-                              </svg>
-                              <span>로그아웃</span>
-                            </button>
-                          </div>
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+                              />
+                            </svg>
+                            <span>로그아웃</span>
+                          </button>
                         </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             </div>
           </div>
         </div>
       </nav>
 
-      <div className="container mx-auto px-6 py-8">
-        {/* Header */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Header Section */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
-          className="mb-8 text-center"
+          className="mb-12 text-center"
         >
-          <h1 className="text-4xl font-light text-black mb-2">
-            환영합니다 {userName} 님
+          <h1 className="text-2xl md:text-4xl font-bold font-montserrat text-black mb-4 tracking-wide">
+            환영합니다,{" "}
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-gray-800 to-black">
+              {userName?.split(" ")[0] || "User"}님
+            </span>
           </h1>
-          <p className="text-xl text-gray-800">
-            오늘은 어떤 문서를 작성할까요?
+          <p className="text-xl text-black opacity-50">
+            오늘은 어떤 글을 작성해볼까요?
           </p>
         </motion.div>
 
-        {/* Quick Actions */}
+        {/* Quick Actions Grid */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.1 }}
-          className="mb-8"
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12"
         >
-          <div className="flex flex-col sm:flex-row gap-4">
-            <Card
-              className="backdrop-blur-sm bg-white/10 border-white/20 hover:bg-white/20 transition-all duration-300 cursor-pointer h-full flex-1"
-              onClick={createNewDocument}
-            >
-              <CardContent className="p-6">
-                <div className="flex items-center space-x-4">
-                  <div className="w-12 h-12 backdrop-blur-md bg-white/20 border border-black/30 rounded-xl flex items-center justify-center">
-                    <PlusIcon className="h-6 w-6 text-black rounded-full" />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-medium text-black">
-                      새 문서 작성
-                    </h3>
-                    <p className="text-sm text-gray-800">
-                      AI와 함께 새로운 문서를 시작하세요
-                    </p>
-                  </div>
+          {/* New Document Card */}
+          <Card
+            className="group bg-white border border-gray-200 hover:border-black hover:shadow-xl transition-all duration-300 cursor-pointer overflow-hidden"
+            onClick={createNewDocument}
+          >
+            <CardContent className="p-8">
+              <div className="flex items-center justify-between mb-6">
+                <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                  <PlusIcon className="h-6 w-6 text-black" />
                 </div>
-              </CardContent>
-            </Card>
+                <ArrowRightIcon className="h-5 w-5 text-gray-400 group-hover:text-black group-hover:translate-x-1 transition-all duration-300" />
+              </div>
+              <h3 className="text-xl font-semibold font-montserrat text-black mb-2">
+                새 문서 작성
+              </h3>
+              <p className="text-gray-600 text-sm leading-relaxed">
+                AI와 함께 새로운 아이디어를 문서로 만들어보세요
+              </p>
+            </CardContent>
+          </Card>
 
-            <Card className="backdrop-blur-sm bg-white/10 border-white/20 hover:bg-white/20 transition-all duration-300 cursor-pointer flex-1">
-              <CardContent className="p-6">
-                <div className="flex items-center space-x-4">
-                  <div className="w-12 h-12 backdrop-blur-md bg-white/20 border border-black/30 rounded-xl flex items-center justify-center">
-                    <FolderIcon className="h-6 w-6 text-black" />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-medium text-black">
-                      템플릿 둘러보기
-                    </h3>
-                    <p className="text-sm text-gray-800">
-                      다양한 문서 템플릿을 확인해보세요
-                    </p>
-                  </div>
+          {/* Upload Document from file */}
+          <Card className="group bg-white border border-gray-200 hover:border-gray-400 hover:shadow-lg transition-all duration-300 cursor-pointer md:col-span-2 lg:col-span-1">
+            <CardContent className="p-8">
+              <div className="flex items-center justify-between mb-6">
+                <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                  <ArrowUpTrayIcon className="h-6 w-6 text-gray-700" />
                 </div>
-              </CardContent>
-            </Card>
-          </div>
+                <ArrowRightIcon className="h-5 w-5 text-gray-400 group-hover:text-gray-700 group-hover:translate-x-1 transition-all duration-300" />
+              </div>
+              <h3 className="text-xl font-semibold font-montserrat text-black mb-2">
+                파일 업로드
+              </h3>
+              <p className="text-gray-600 text-sm leading-relaxed">
+                작업하시던 문서가 있나요?
+              </p>
+            </CardContent>
+          </Card>
+
+          {/* Templates Card */}
+          <Card className="group bg-white border border-gray-200 hover:border-gray-400 hover:shadow-lg transition-all duration-300 cursor-pointer">
+            <CardContent className="p-8">
+              <div className="flex items-center justify-between mb-6">
+                <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                  <FolderIcon className="h-6 w-6 text-gray-700" />
+                </div>
+                <ArrowRightIcon className="h-5 w-5 text-gray-400 group-hover:text-gray-700 group-hover:translate-x-1 transition-all duration-300" />
+              </div>
+              <h3 className="text-xl font-semibold font-montserrat text-black mb-2">
+                템플릿 살펴보기
+              </h3>
+              <p className="text-gray-600 text-sm leading-relaxed">
+                다양한 문서 템플릿으로 빠르게 시작하세요
+              </p>
+            </CardContent>
+          </Card>
         </motion.div>
 
-        {/* Recent Documents - 2 Column Grid */}
+        {/* Documents Section */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.3 }}
-          className="w-full"
         >
-          <Card className="backdrop-blur-sm bg-white/10 border-white/20">
-            <CardHeader>
-              <CardTitle className="text-black">최근 문서</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {isLoadingDocuments ? (
-                /* Loading State */
-                <div className="flex flex-col items-center justify-center py-16">
-                  <div className="w-8 h-8 backdrop-blur-md bg-white/20 border border-white/30 rounded-lg flex items-center justify-center mx-auto mb-4 animate-spin">
-                    <span className="text-black text-sm font-bold">C</span>
-                  </div>
-                  <p className="text-gray-800">문서를 불러오는 중...</p>
-                </div>
-              ) : documents.length === 0 ? (
-                /* Empty State */
-                <div className="flex flex-col items-center justify-center py-16">
-                  <div className="w-20 h-20 backdrop-blur-md bg-white/20 border border-white/30 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                    <svg
-                      className="w-10 h-10 text-black"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={1.5}
-                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                      />
-                    </svg>
-                  </div>
-                  <h3 className="text-lg font-medium text-black mb-2">
-                    아직 작성된 문서가 없습니다
-                  </h3>
-                  <p className="text-gray-800 text-center mb-6 max-w-md">
-                    AI와 함께 새로운 문서를 작성해보세요.
-                  </p>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {documents.map((doc: Document, index: number) => (
-                    <motion.div
-                      key={doc.id}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ duration: 0.4, delay: 0.1 * index }}
-                      className={`group relative p-4 backdrop-blur-sm bg-white/20 rounded-lg border border-white/30 hover:bg-white/30 transition-all duration-200 cursor-pointer ${
-                        documentMenuOpen === doc.id ? "z-[9999]" : "z-10"
-                      }`}
-                      onClick={() => handleDocumentClick(doc.id)}
-                    >
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1 min-w-0">
-                          {editingDocumentId === doc.id ? (
-                            <input
-                              type="text"
-                              value={editingTitle}
-                              onChange={(e) => setEditingTitle(e.target.value)}
-                              onBlur={() => {
-                                setTimeout(finishEditingTitle, 100);
-                              }}
-                              onKeyDown={(e) => {
-                                if (e.key === "Enter") {
-                                  finishEditingTitle();
-                                } else if (e.key === "Escape") {
-                                  cancelEditingTitle();
-                                }
-                              }}
-                              className="w-full font-medium text-black mb-1 bg-white/50 border border-white/50 rounded px-2 py-1 text-sm"
-                              autoFocus
-                              onClick={(e) => e.stopPropagation()}
-                            />
-                          ) : (
-                            <h4 className="font-medium text-black mb-1 truncate">
-                              {doc.title}
-                            </h4>
-                          )}
-                          <p className="text-sm text-gray-800 mb-2 line-clamp-1">
-                            {stripHtmlAndMarkdown(doc.content)}
-                          </p>
-                          <div className="flex items-center space-x-4 text-xs text-gray-600">
-                            <span>{formatLastModified(doc.last_modified)}</span>
-                          </div>
-                        </div>
+          <div className="flex mb-8">
+            <h2 className="text-2xl font-bold font-montserrat text-black">
+              내 문서
+            </h2>
+          </div>
 
-                        {/* More Options Button */}
-                        <div className="relative ml-2" data-document-menu>
-                          <button
-                            className="opacity-0 group-hover:opacity-100 p-1 rounded-md hover:bg-white/20 transition-all duration-200"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setDocumentMenuOpen(
-                                documentMenuOpen === doc.id ? null : doc.id
-                              );
-                            }}
+          {isLoadingDocuments ? (
+            <Loading />
+          ) : documents.length === 0 ? (
+            /* Empty State */
+            <div className="flex flex-col items-center justify-center py-24">
+              <div className="w-24 h-24 bg-gray-50 rounded-3xl flex items-center justify-center mb-8">
+                <DocumentTextIcon className="w-12 h-12 text-gray-400" />
+              </div>
+              <h3 className="text-2xl font-semibold font-montserrat text-black mb-4">
+                첫 번째 문서를 만들어보세요
+              </h3>
+              <p className="text-gray-600 text-center mb-8 max-w-md leading-relaxed">
+                CLARA와 함께 새로운 문서를 작성하고 AI의 도움을 받아보세요.
+              </p>
+              <button
+                onClick={createNewDocument}
+                className="bg-gray-200 text-black px-8 py-3 rounded-xl font-medium hover:bg-gray-300 transition-colors duration-200 flex items-center space-x-2"
+              >
+                <PlusIcon className="h-5 w-5" />
+                <span>새 문서 만들기</span>
+              </button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {documents.map((doc: Document, index: number) => (
+                <motion.div
+                  key={doc.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.4, delay: 0.1 * index }}
+                  className={`group relative bg-white border border-gray-200 rounded-2xl p-6 hover:border-gray-400 hover:shadow-lg transition-all duration-300 cursor-pointer ${
+                    documentMenuOpen === doc.id ? "z-[9999]" : "z-10"
+                  }`}
+                  onClick={() => handleDocumentClick(doc.id)}
+                >
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center">
+                      <DocumentTextIcon className="h-5 w-5 text-gray-600" />
+                    </div>
+
+                    {/* More Options Button */}
+                    <div className="relative" data-document-menu>
+                      <button
+                        className="opacity-0 group-hover:opacity-100 p-2 rounded-lg hover:bg-gray-100 transition-all duration-200"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setDocumentMenuOpen(
+                            documentMenuOpen === doc.id ? null : doc.id
+                          );
+                        }}
+                      >
+                        <EllipsisVerticalIcon className="h-5 w-5 text-gray-500" />
+                      </button>
+
+                      {/* Dropdown Menu */}
+                      <AnimatePresence>
+                        {documentMenuOpen === doc.id && (
+                          <motion.div
+                            initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                            transition={{ duration: 0.15 }}
+                            className="absolute right-0 top-full mt-2 w-40 bg-white border border-gray-200 rounded-xl shadow-lg z-[9999]"
                           >
-                            <EllipsisVerticalIcon className="h-4 w-4 text-gray-600" />
-                          </button>
+                            <button
+                              className="w-full flex items-center space-x-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors rounded-t-xl"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                startEditingTitle(doc);
+                              }}
+                            >
+                              <PencilIcon className="h-4 w-4" />
+                              <span>제목 수정</span>
+                            </button>
+                            <button
+                              className="w-full flex items-center space-x-3 px-4 py-3 text-sm text-red-600 hover:bg-red-50 transition-colors rounded-b-xl"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteDocument(doc.id);
+                              }}
+                            >
+                              <TrashIcon className="h-4 w-4" />
+                              <span>삭제</span>
+                            </button>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                  </div>
 
-                          {/* Dropdown Menu */}
-                          <AnimatePresence>
-                            {documentMenuOpen === doc.id && (
-                              <motion.div
-                                initial={{ opacity: 0, scale: 0.95, y: -10 }}
-                                animate={{ opacity: 1, scale: 1, y: 0 }}
-                                exit={{ opacity: 0, scale: 0.95, y: -10 }}
-                                transition={{ duration: 0.15 }}
-                                className="absolute right-0 top-full mt-1 w-32 backdrop-blur-md bg-white/95 border border-white/30 rounded-lg shadow-lg z-[9999]"
-                              >
-                                <button
-                                  className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-black hover:bg-white/20 transition-colors rounded-t-lg"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    startEditingTitle(doc);
-                                  }}
-                                >
-                                  <PencilIcon className="h-3 w-3" />
-                                  <span>제목 수정</span>
-                                </button>
-                                <button
-                                  className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50/50 transition-colors rounded-b-lg"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleDeleteDocument(doc.id);
-                                  }}
-                                >
-                                  <TrashIcon className="h-3 w-3" />
-                                  <span>삭제</span>
-                                </button>
-                              </motion.div>
-                            )}
-                          </AnimatePresence>
-                        </div>
-                      </div>
-                    </motion.div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                  <div className="flex-1">
+                    {editingDocumentId === doc.id ? (
+                      <input
+                        type="text"
+                        value={editingTitle}
+                        onChange={(e) => setEditingTitle(e.target.value)}
+                        onBlur={() => {
+                          setTimeout(finishEditingTitle, 100);
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            finishEditingTitle();
+                          } else if (e.key === "Escape") {
+                            cancelEditingTitle();
+                          }
+                        }}
+                        className="w-full font-semibold font-montserrat text-black mb-3 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-lg focus:outline-none focus:border-black"
+                        autoFocus
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                    ) : (
+                      <h4 className="font-semibold font-montserrat text-black mb-3 text-lg line-clamp-2 leading-tight">
+                        {doc.title}
+                      </h4>
+                    )}
+
+                    <p className="text-gray-600 text-sm mb-4 line-clamp-2 leading-relaxed">
+                      {stripHtmlAndMarkdown(doc.content) || "내용이 없습니다."}
+                    </p>
+
+                    <div className="flex items-center text-xs text-gray-500">
+                      <ClockIcon className="h-3 w-3 mr-1" />
+                      <span>{formatLastModified(doc.last_modified)}</span>
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          )}
         </motion.div>
       </div>
     </main>

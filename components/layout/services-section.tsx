@@ -17,12 +17,12 @@ const ServiceCard: React.FC<ServiceCardProps> = ({
   imageCount,
   isReversed = false,
 }) => (
-  <div className="relative mb-16 lg:mb-32">
+  <div className="relative mb-12 sm:mb-16 lg:mb-24 xl:mb-32">
     {/* Content */}
     <div
-      className={`relative z-10 flex flex-col lg:flex-row ${
-        isReversed ? "lg:flex-row-reverse" : ""
-      } items-center justify-between gap-8 px-4 lg:px-16 py-12 lg:py-20`}
+      className={`relative z-10 flex flex-col ${
+        isReversed ? "lg:flex-row-reverse" : "lg:flex-row"
+      } items-center justify-between gap-6 sm:gap-8 px-4 sm:px-8 lg:px-16 py-8 sm:py-12 lg:py-20`}
     >
       {/* Text content */}
       <div className="w-full lg:w-1/3 text-white">
@@ -31,7 +31,11 @@ const ServiceCard: React.FC<ServiceCardProps> = ({
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
           viewport={{ once: true }}
-          className="text-2xl lg:text-4xl font-montserrat font-semibold mb-4 lg:mb-6"
+          className="font-montserrat font-semibold mb-3 sm:mb-4 lg:mb-6"
+          style={{
+            fontSize: "clamp(1.5rem, 4vw, 2.5rem)",
+            lineHeight: "1.2",
+          }}
         >
           {title}
         </motion.h3>
@@ -40,14 +44,14 @@ const ServiceCard: React.FC<ServiceCardProps> = ({
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.2 }}
           viewport={{ once: true }}
-          className="text-base lg:text-xl leading-relaxed font-montserrat font-normal opacity-90"
+          className="text-sm sm:text-base lg:text-xl leading-relaxed font-montserrat font-normal opacity-90"
         >
           {description}
         </motion.p>
       </div>
 
       {/* Images */}
-      <div className="flex-1 grid gap-4">
+      <div className="flex-1 w-full">
         {imageCount === 1 && (
           <motion.div
             initial={{ opacity: 0, scale: 0.8 }}
@@ -66,7 +70,7 @@ const ServiceCard: React.FC<ServiceCardProps> = ({
         )}
 
         {imageCount === 2 && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
             {[1, 2].map((num, index) => (
               <motion.div
                 key={num}
@@ -88,7 +92,7 @@ const ServiceCard: React.FC<ServiceCardProps> = ({
         )}
 
         {imageCount === 3 && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
             {[1, 2, 3].map((num, index) => (
               <motion.div
                 key={num}
@@ -116,22 +120,22 @@ const ServiceCard: React.FC<ServiceCardProps> = ({
 const ServicesSection: React.FC = () => {
   const services = [
     {
-      title: "SERVICE 1",
+      title: "Persistent AI Conversations",
       description:
-        "functionality, and cutting-edge technology, we provide a comprehensive online experience that adapts to your needs.",
+        "Never lose context again. Our AI remembers every discussion, building on previous conversations to deliver increasingly intelligent assistance. Chat history that evolves with your document.",
       imageCount: 2,
     },
     {
-      title: "SERVICE 2",
+      title: "Intelligent Document Indexing",
       description:
-        "functionality, and cutting-edge technology, we provide a comprehensive online experience that adapts to your needs.",
+        "Automatically parse markdown headers to understand your document's DNA. Navigate complex structures effortlessly while AI maintains section-aware context throughout your writing process.",
       imageCount: 1,
       isReversed: true,
     },
     {
-      title: "SERVICE 3",
+      title: "Unified Knowledge Management",
       description:
-        "functionality, and cutting-edge technology, we provide a comprehensive online experience that adapts to your needs.",
+        "Upload PDFs, Word docs, images, and more. Tag, organize, and instantly access your research materials. Drag-and-drop simplicity meets enterprise-grade file management.",
       imageCount: 3,
     },
   ];
@@ -139,8 +143,9 @@ const ServicesSection: React.FC = () => {
   return (
     <section className="relative bg-black overflow-hidden">
       {/* #1 Top section with CLARA SERVICES */}
-      <div className="relative bg-blue-300 py-12 lg:py-20 rounded-t-4xl rounded-b-4xl">
-        <div className="hidden xl:block absolute top-1/4 left-1/4 w-256 h-256 rotate-12">
+      <div className="relative bg-blue-300 py-8 sm:py-12 lg:py-20 rounded-t-4xl rounded-b-4xl">
+        {/* Decorative element - Hidden on mobile and tablet */}
+        <div className="hidden xl:block absolute top-1/4 left-1/4 w-64 h-64 rotate-12 opacity-30">
           <Image
             src="/assets/futerals.svg"
             alt="Decorative element"
@@ -149,22 +154,26 @@ const ServicesSection: React.FC = () => {
           />
         </div>
 
-        <div className="relative z-10 container mx-auto">
+        <div className="relative z-10 container mx-auto px-4 sm:px-6 lg:px-8">
           {/* Main titles */}
-          <div className="flex mb-12 lg:mb-16">
+          <div className="flex mb-8 sm:mb-12 lg:mb-16">
             <motion.h2
               initial={{ opacity: 0, x: 30 }}
               whileInView={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.8, delay: 0.2 }}
               viewport={{ once: true }}
-              className="text-6xl lg:text-9xl font-montserrat font-medium text-black"
+              className="font-montserrat font-medium text-black"
+              style={{
+                fontSize: "clamp(3rem, 12vw, 9rem)",
+                lineHeight: "0.9",
+              }}
             >
               SERVICES
             </motion.h2>
           </div>
 
           {/* Description and service list */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 lg:gap-12 items-start">
             {/* Left: Description */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -173,19 +182,20 @@ const ServicesSection: React.FC = () => {
               viewport={{ once: true }}
               className="lg:col-span-5"
             >
-              <p className="text-base lg:text-xl leading-relaxed font-montserrat font-medium text-black">
-                functionality, and cutting-edge technology, we provide a
-                comprehensive online experience that adapts to your needs.
+              <p className="text-sm sm:text-base lg:text-xl leading-relaxed font-montserrat font-medium text-black mb-8 sm:mb-12">
+                Three revolutionary features that transform how you write. Each
+                component works in perfect harmony to create the ultimate
+                writing environment.
               </p>
-              <div className="flex flex-col gap-y-12 mt-12">
-                <p className="text-xl lg:text-3xl font-montserrat font-medium text-black underline">
-                  Service 1
+              <div className="flex flex-col gap-y-6 sm:gap-y-8 lg:gap-y-12">
+                <p className="text-lg sm:text-xl lg:text-2xl xl:text-3xl font-montserrat font-medium text-black underline">
+                  Infinite Memory
                 </p>
-                <p className="text-xl lg:text-3xl font-montserrat font-medium text-black underline">
-                  Service 2
+                <p className="text-lg sm:text-xl lg:text-2xl xl:text-3xl font-montserrat font-medium text-black underline">
+                  Smart Structure
                 </p>
-                <p className="text-xl lg:text-3xl font-montserrat font-medium text-black underline">
-                  Service 3
+                <p className="text-lg sm:text-xl lg:text-2xl xl:text-3xl font-montserrat font-medium text-black underline">
+                  Total Control
                 </p>
               </div>
             </motion.div>
@@ -196,12 +206,11 @@ const ServicesSection: React.FC = () => {
               whileInView={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.8, delay: 0.3 }}
               viewport={{ once: true }}
-              className="lg:col-span-7 relative aspect-video rounded-2xl overflow-hidden"
+              className="lg:col-span-7 relative aspect-video rounded-xl sm:rounded-2xl overflow-hidden"
             >
-              <div className="absolute inset-0 bg-gradient-to-b from-black/80 to-black/80 z-10"></div>
               <Image
                 src="/assets/placeholder.svg"
-                alt="Main service image"
+                alt="Hero service image"
                 fill
                 className="object-cover"
               />
@@ -222,9 +231,10 @@ const ServicesSection: React.FC = () => {
             className="text-left mb-12 lg:mb-20"
           >
             <p className="text-white text-xl lg:text-2xl leading-relaxed font-montserrat font-normal max-w-4xl">
-              functionality, and cutting-edge technology, we provide a
-              comprehensive online experience that adapts to your needs. &ldquo;Now,
-              writing documents is easier and more effortless than ever.&rdquo;
+              We've shattered the context window. Finally, an AI that
+              understands your entire manuscript from introduction to
+              conclusion. &ldquo;Writing has never felt this natural and
+              powerful.&rdquo;
             </p>
           </motion.div>
 
@@ -242,7 +252,7 @@ const ServicesSection: React.FC = () => {
           </div>
 
           {/* Decorative futerals elements - hidden on mobile for cleaner look */}
-          <div className="hidden xl:block absolute top-1/4 right-6/7 w-96 h-96 opacity-30 rotate-90">
+          <div className="hidden xl:block absolute top-1/4 right-6/7 w-96 h-96 opacity-30 rotate-90 pointer-events-none">
             <Image
               src="/assets/futerals.svg"
               alt="Decorative element"
@@ -251,7 +261,7 @@ const ServicesSection: React.FC = () => {
             />
           </div>
 
-          <div className="hidden xl:block absolute bottom-1/4 right-1/2 w-96 h-96 opacity-30 rotate-90">
+          <div className="hidden xl:block absolute bottom-1/4 right-1/2 w-96 h-96 opacity-30 rotate-90 pointer-events-none">
             <Image
               src="/assets/futerals.svg"
               alt="Decorative element"
@@ -260,7 +270,7 @@ const ServicesSection: React.FC = () => {
             />
           </div>
 
-          <div className="hidden lg:block absolute top-1/2 left-12 w-32 h-32 opacity-30 rotate-90">
+          <div className="hidden lg:block absolute top-1/2 left-12 w-32 h-32 opacity-30 rotate-90 pointer-events-none">
             <Image
               src="/assets/futerals.svg"
               alt="Decorative element"
@@ -272,7 +282,7 @@ const ServicesSection: React.FC = () => {
       </div>
 
       {/* Large decorative element at bottom - extends beyond viewport */}
-      <div className="absolute -bottom-24 transform translate-x-1/8 translate-y-2/4 w-512 h-512 opacity-20 rotate-100 overflow-hidden">
+      <div className="absolute -bottom-24 transform translate-x-1/8 translate-y-2/4 w-512 h-512 opacity-20 rotate-100 overflow-hidden pointer-events-none">
         <Image
           src="/assets/futerals.svg"
           alt="Decorative element"
@@ -280,8 +290,6 @@ const ServicesSection: React.FC = () => {
           className="object-contain grayscale rotate-180"
         />
       </div>
-      {/* Bottom gradient overlay */}
-      <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-black to-transparent"></div>
     </section>
   );
 };
