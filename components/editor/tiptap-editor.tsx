@@ -416,18 +416,18 @@ export function TiptapEditor({
             ))}
           </div>
 
-          <div className="flex items-center justify-center gap-3 pt-3 border-t border-gray-200">
+          <div className="flex items-center justify-center gap-3 pt-3">
             <input
               type="color"
               value={currentColor}
               onChange={(e) => handleColorChange(e.target.value)}
-              className="w-10 h-8 rounded-lg border border-gray-300 cursor-pointer"
+              className="w-8 h-8 rounded-lg cursor-pointer border-none"
             />
             <Button
               variant="outline"
               size="sm"
               onClick={removeColor}
-              className="text-xs h-8 px-3 bg-white/80 hover:bg-white"
+              className="text-xs h-8 px-3 border-none"
             >
               기본값
             </Button>

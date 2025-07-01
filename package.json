@@ -45,7 +45,7 @@
     "@tiptap/starter-kit": "^2.22.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
-    "framer-motion": "^12.19.2",
+    "framer-motion": "^12.22.0",
     "lucide-react": "^0.523.0",
     "mammoth": "^1.9.1",
     "motion": "^12.19.4",
