@@ -271,7 +271,7 @@ export default function WorkspacePage() {
           </p>
           <Link href="/dashboard">
             <Button className="bg-black text-white px-8 py-3 rounded-xl font-medium transition-colors duration-200">
-              대시보드로 돌아가기
+              white 대시보드로 돌아가기
             </Button>
           </Link>
         </div>
@@ -292,12 +292,12 @@ export default function WorkspacePage() {
   return (
     <main className="h-screen bg-white flex flex-col">
       {/* Navigation */}
-      <nav className="border-b border-gray-100 flex-shrink-0 sticky top-0 z-50 bg-white/80 backdrop-blur-sm">
+      <nav className="border-b border-gray-100 flex-shrink-0 sticky top-0 z-50 bg-white backdrop-blur-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center h-16">
             {/* Left - Back to Dashboard & Logo */}
             <div className="flex flex-shrink-0">
-              <Link href="/" className="flex items-center space-x-3">
+              <Link href="/dashboard" className="flex items-center space-x-3">
                 <span className="text-xl font-bold font-montserrat text-black tracking-wider">
                   ＣＬＡＲＡ
                 </span>

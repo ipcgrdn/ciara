@@ -275,7 +275,7 @@ export function TiptapEditor({
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
-      className="w-full h-full flex bg-slate-100"
+      className="w-full h-full flex bg-black/5"
     >
       {/* Left Sidebar - Document Outline (Resizable width, independent scroll) */}
       <AnimatePresence>

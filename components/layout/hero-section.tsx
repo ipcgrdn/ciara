@@ -218,7 +218,7 @@ export default function HeroSection() {
             {/* Left description */}
             <div className="w-full lg:w-[442px]">
               <p className="text-white font-montserrat font-normal text-base sm:text-lg lg:text-xl xl:text-[22px] leading-relaxed">
-                Born from the vision of &quot;Cursor for Writing&quot; - CLARA reimagines
+                Born from the vision of "Cursor for Writing" - CLARA reimagines
                 how we create long-form content.
               </p>
             </div>

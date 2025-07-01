@@ -17,7 +17,9 @@ import {
   ArrowUp,
   Trash2,
   Clock,
+  Zap,
 } from "lucide-react";
+import { supabase } from "@/lib/supabase";
 
 interface Message {
   id: string;
@@ -68,6 +70,15 @@ export function AiSidebar({ className, documentId }: AiSidebarProps) {
   const [showHistory, setShowHistory] = useState(false);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
 
+  // Agent 모드 상태
+  const [isAgentMode, setIsAgentMode] = useState(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("clara-agent-mode");
+      return saved === "true";
+    }
+    return true; // 기본적으로 Agent 모드 활성화
+  });
+
   const sidebarRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
@@ -82,6 +93,17 @@ export function AiSidebar({ className, documentId }: AiSidebarProps) {
       localStorage.setItem("clara-ai-sidebar-width", newWidth.toString());
     }
   }, []);
+
+  // Agent 모드 토글
+  const toggleAgentMode = useCallback(() => {
+    if (!user) return; // 로그인 안 된 경우 토글 불가
+
+    const newMode = !isAgentMode;
+    setIsAgentMode(newMode);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("clara-agent-mode", newMode.toString());
+    }
+  }, [isAgentMode, user]);
 
   const handleMouseDown = useCallback(
     (e: React.MouseEvent) => {
@@ -175,19 +197,43 @@ export function AiSidebar({ className, documentId }: AiSidebarProps) {
           content: msg.content,
         }));
 
-      // 스트리밍 AI API 호출
+      // 스트리밍 AI API 호출 (Agent 모드에 따라 엔드포인트 선택)
       const controller = new AbortController();
       setAbortController(controller);
 
-      const response = await fetch("/api/ai/stream", {
+      const apiEndpoint = isAgentMode ? "/api/ai/agent" : "/api/ai/stream";
+      // Agent 모드인데 로그인 안 된 경우 체크
+      if (isAgentMode && !user) {
+        throw new Error("Agent 기능을 사용하려면 로그인이 필요합니다.");
+      }
+
+      const requestBody = isAgentMode
+        ? {
+            message: currentInputValue,
+            documentId: documentId,
+            userId: user?.id || "anonymous",
+            conversationHistory: conversationHistory,
+          }
+        : {
+            message: currentInputValue,
+            conversationHistory: conversationHistory,
+          };
+
+      const response = await fetch(apiEndpoint, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          ...(isAgentMode && user
+            ? {
+                Authorization: `Bearer ${
+                  (
+                    await supabase.auth.getSession()
+                  ).data.session?.access_token
+                }`,
+              }
+            : {}),
         },
-        body: JSON.stringify({
-          message: currentInputValue,
-          conversationHistory: conversationHistory,
-        }),
+        body: JSON.stringify(requestBody),
         signal: controller.signal,
       });
 
@@ -520,6 +566,23 @@ export function AiSidebar({ className, documentId }: AiSidebarProps) {
               </span>
             </div>
             <div className="flex items-center gap-1">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={toggleAgentMode}
+                disabled={!user}
+                className={cn(
+                  "h-6 w-6 p-0 transition-all duration-200",
+                  isAgentMode
+                    ? "text-yellow-600 bg-yellow-50 hover:bg-yellow-100"
+                    : "text-slate-500 hover:text-slate-700 hover:bg-white/60"
+                )}
+                title={
+                  isAgentMode ? "Agent 모드 (도구 사용 가능)" : "일반 채팅 모드"
+                }
+              >
+                <Zap className="h-3 w-3" />
+              </Button>
               <Button
                 variant="ghost"
                 size="sm"
