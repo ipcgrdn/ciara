@@ -91,6 +91,8 @@ export default function WorkspacePage() {
     [saveDocument]
   );
 
+
+
   useEffect(() => {
     if (!loading && !user) {
       router.push("/auth");
@@ -271,7 +273,7 @@ export default function WorkspacePage() {
           </p>
           <Link href="/dashboard">
             <Button className="bg-black text-white px-8 py-3 rounded-xl font-medium transition-colors duration-200">
-              white 대시보드로 돌아가기
+              대시보드로 돌아가기
             </Button>
           </Link>
         </div>
@@ -299,7 +301,7 @@ export default function WorkspacePage() {
             <div className="flex flex-shrink-0">
               <Link href="/dashboard" className="flex items-center space-x-3">
                 <span className="text-xl font-bold font-montserrat text-black tracking-wider">
-                  ＣＬＡＲＡ
+                  ＣＩＡＲＡ
                 </span>
               </Link>
             </div>

@@ -123,7 +123,7 @@ export default function HeroSection() {
                   to novels - write with infinite context.
                 </p>
               </motion.div>
-              {/* CLARA Section */}
+              {/* CIARA Section */}
               <motion.div
                 initial={{ opacity: 0, x: 50 }}
                 animate={{ opacity: 1, x: 0 }}
@@ -138,7 +138,7 @@ export default function HeroSection() {
                     letterSpacing: "clamp(-3px, -1vw, -6.2px)",
                   }}
                 >
-                  ＣＬＡＲＡ
+                  ＣＩＡＲＡ
                 </h2>
                 <p className="text-white/80 max-w-sm lg:ml-auto leading-relaxed text-sm sm:text-base">
                   Beyond the limitations of traditional AI tools.{" "}
@@ -218,7 +218,7 @@ export default function HeroSection() {
             {/* Left description */}
             <div className="w-full lg:w-[442px]">
               <p className="text-white font-montserrat font-normal text-base sm:text-lg lg:text-xl xl:text-[22px] leading-relaxed">
-                Born from the vision of &quot;Cursor for Writing&quot; - CLARA
+                Born from the vision of &quot;Cursor for Writing&quot; - CIARA
                 reimagines how we create long-form content.
               </p>
             </div>

@@ -39,6 +39,7 @@ export function OnboardingModal({
     | "details-input"
     | "generating-outline"
     | "outline-preview"
+    | "auto-generate-confirm"
     | "outline-edit"
   >("mode-select");
   const [selectedPurpose, setSelectedPurpose] = useState("");
@@ -123,8 +124,20 @@ export function OnboardingModal({
     }
   };
 
-  const handleOutlineConfirm = () => {
-    // 목차를 부모 컴포넌트로 전달하고 모달 닫기
+  const handleOutlineNext = () => {
+    // 목차 확인 후 자동 생성 승인 단계로 이동
+    setStep("auto-generate-confirm");
+  };
+
+  const handleAutoGenerateConfirm = () => {
+    // TODO: 실제 AI 문서 자동 생성 로직 구현 예정
+    // 현재는 목차만 전달하고 모달 닫기
+    onOutlineConfirm(generatedOutline);
+    onClose();
+  };
+
+  const handleManualWriting = () => {
+    // 수동 작성 선택 시 목차만 전달하고 모달 닫기
     onOutlineConfirm(generatedOutline);
     onClose();
   };
@@ -191,7 +204,7 @@ export function OnboardingModal({
     // 편집된 내용을 마크다운으로 변환하여 저장
     const markdown = outlineToMarkdown(editableOutline);
     setGeneratedOutline(markdown);
-    setStep("outline-preview");
+    setStep("auto-generate-confirm");
   };
 
   // 목차 아이템 추가
@@ -349,6 +362,7 @@ export function OnboardingModal({
     setCustomPurpose("");
     setAdditionalInfo("");
     setGeneratedOutline("");
+    setEditableOutline([]);
   };
 
   const handleClose = () => {
@@ -840,10 +854,193 @@ export function OnboardingModal({
                   </Button>
 
                   <Button
-                    onClick={handleOutlineConfirm}
+                    onClick={handleOutlineNext}
                     className="bg-black/90 hover:bg-black text-white font-medium text-sm px-6 py-2 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 backdrop-blur-sm"
                   >
-                    확인
+                    다음
+                  </Button>
+                </motion.div>
+              </div>
+            </div>
+          </motion.div>
+        ) : step === "auto-generate-confirm" ? (
+          // Auto Generate Confirmation Step
+          <motion.div
+            initial={{ opacity: 0, x: 50 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -50 }}
+            transition={{
+              duration: 0.4,
+              ease: [0.25, 0.46, 0.45, 0.94],
+            }}
+            className="w-full max-w-lg mx-auto"
+          >
+            <div className="relative backdrop-blur-2xl bg-white/70 border border-white/40 rounded-3xl shadow-2xl shadow-black/5 overflow-hidden">
+              {/* Noise texture overlay */}
+              <div className="absolute inset-0 opacity-20 mix-blend-overlay pointer-events-none">
+                <div className="w-full h-full bg-gradient-to-br from-transparent via-gray-100/30 to-transparent"></div>
+              </div>
+
+              <div className="relative p-8">
+                {/* Header */}
+                <div className="text-center mb-8">
+                  <motion.div
+                    initial={{ scale: 0.8, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ delay: 0.1, duration: 0.3 }}
+                    className="w-16 h-16 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-orange-100/80 to-red-100/80 border border-orange-200/60 shadow-lg flex items-center justify-center"
+                  >
+                    <svg
+                      className="w-8 h-8 text-orange-600"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={1.5}
+                        d="M13 10V3L4 14h7v7l9-11h-7z"
+                      />
+                    </svg>
+                  </motion.div>
+
+                  <h2 className="text-2xl font-medium text-gray-900 mb-3 tracking-tight">
+                    문서 자동 생성
+                  </h2>
+                  <p className="text-gray-600 text-sm font-normal leading-relaxed">
+                    AI가 목차를 바탕으로 문서 내용을 자동으로 작성할까요?
+                  </p>
+                </div>
+
+                {/* Options */}
+                <motion.div
+                  initial={{ y: 20, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: 0.2, duration: 0.3 }}
+                  className="space-y-4 mb-8"
+                >
+                  {/* Auto Generate Option */}
+                  <div
+                    onClick={handleAutoGenerateConfirm}
+                    className="group cursor-pointer p-6 rounded-2xl bg-gradient-to-br from-blue-50/70 to-purple-50/70 hover:from-blue-50/85 hover:to-purple-50/85 border border-blue-200/50 hover:border-blue-300/70 transition-all duration-300"
+                  >
+                    <div className="flex items-center space-x-4">
+                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-100/80 to-purple-100/80 border border-blue-200/50 flex items-center justify-center group-hover:scale-110 transition-all duration-500">
+                        <svg
+                          className="w-6 h-6 text-blue-600"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={1.5}
+                            d="M13 10V3L4 14h7v7l9-11h-7z"
+                          />
+                        </svg>
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="text-lg font-medium text-gray-900 mb-1">
+                          AI 자동 생성
+                        </h3>
+                        <p className="text-gray-600 text-sm">
+                          목차를 바탕으로 AI가 문서 내용을 자동으로 작성합니다
+                        </p>
+                      </div>
+                      <div className="text-blue-600 group-hover:translate-x-1 transition-transform duration-200">
+                        <svg
+                          className="w-5 h-5"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M9 5l7 7-7 7"
+                          />
+                        </svg>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Manual Writing Option */}
+                  <div
+                    onClick={handleManualWriting}
+                    className="group cursor-pointer p-6 rounded-2xl bg-white/50 hover:bg-white/70 border border-white/60 hover:border-white/80 transition-all duration-300"
+                  >
+                    <div className="flex items-center space-x-4">
+                      <div className="w-12 h-12 rounded-xl bg-gray-100/60 border border-gray-200/40 flex items-center justify-center group-hover:scale-110 transition-all duration-500">
+                        <svg
+                          className="w-6 h-6 text-gray-700"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={1.5}
+                            d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+                          />
+                        </svg>
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="text-lg font-medium text-gray-900 mb-1">
+                          직접 작성
+                        </h3>
+                        <p className="text-gray-600 text-sm">
+                          목차만 사용하고 문서 내용은 직접 작성합니다
+                        </p>
+                      </div>
+                      <div className="text-gray-600 group-hover:translate-x-1 transition-transform duration-200">
+                        <svg
+                          className="w-5 h-5"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M9 5l7 7-7 7"
+                          />
+                        </svg>
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+
+                {/* Navigation */}
+                <motion.div
+                  initial={{ y: 20, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: 0.4, duration: 0.3 }}
+                  className="flex justify-start"
+                >
+                  <Button
+                    variant="ghost"
+                    onClick={() => setStep("outline-preview")}
+                    className="text-gray-500 hover:text-gray-700 hover:bg-white/50 font-normal text-sm px-4 py-2 rounded-xl flex items-center space-x-2"
+                  >
+                    <svg
+                      className="w-4 h-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M15 19l-7-7 7-7"
+                      />
+                    </svg>
+                    <span>이전</span>
                   </Button>
                 </motion.div>
               </div>
@@ -996,10 +1193,10 @@ export function OnboardingModal({
                   </Button>
 
                   <Button
-                    onClick={() => setStep("outline-preview")}
+                    onClick={() => setStep("auto-generate-confirm")}
                     className="bg-black/90 hover:bg-black text-white font-medium text-sm px-6 py-2 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 backdrop-blur-sm"
                   >
-                    미리보기
+                    완료
                   </Button>
                 </motion.div>
               </div>

@@ -58,15 +58,15 @@ export function IndexSidebar({
   // localStorage에서 너비 설정 불러오기
   const [width, setWidth] = useState(() => {
     if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("clara-index-sidebar-width");
+      const saved = localStorage.getItem("ciara-index-sidebar-width");
       return saved ? parseInt(saved, 10) : 320;
     }
     return 320;
   });
 
   const [isResizing, setIsResizing] = useState(false);
-  const [isKnowledgeExpanded, setIsKnowledgeExpanded] = useState(true);
-  const [isIndexExpanded, setIsIndexExpanded] = useState(true);
+  const [isKnowledgeExpanded, setIsKnowledgeExpanded] = useState(false);
+  const [isIndexExpanded, setIsIndexExpanded] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
   const [knowledgeItems, setKnowledgeItems] = useState<KnowledgeItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -84,7 +84,7 @@ export function IndexSidebar({
   const updateWidth = useCallback((newWidth: number) => {
     setWidth(newWidth);
     if (typeof window !== "undefined") {
-      localStorage.setItem("clara-index-sidebar-width", newWidth.toString());
+      localStorage.setItem("ciara-index-sidebar-width", newWidth.toString());
     }
   }, []);
 

@@ -49,7 +49,7 @@ export default function Loading() {
 
       {/* Main loading content */}
       <div className="relative text-center">
-        {/* CLARA Logo with animation */}
+        {/* CIARA Logo with animation */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -67,7 +67,7 @@ export default function Loading() {
             }}
             className="text-white text-6xl md:text-7xl font-bold font-montserrat tracking-wider mb-4"
           >
-            CLARA
+                          CIARA
           </motion.h1>
         </motion.div>
 

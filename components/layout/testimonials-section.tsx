@@ -9,19 +9,19 @@ const TestimonialsSection: React.FC = () => {
   const testimonials = [
     {
       quote:
-        "CLARA completely transformed my thesis writing. The AI actually remembers conversations from weeks ago and builds on them. It's like having a brilliant research partner.",
+        "CIARA completely transformed my thesis writing. The AI actually remembers conversations from weeks ago and builds on them. It's like having a brilliant research partner.",
       name: "Dr. Sarah Chen",
       title: "PhD RESEARCHER",
     },
     {
       quote:
-        "I wrote a 200-page technical report with CLARA. The consistency across chapters was perfect - it understood the entire document structure throughout the process.",
+        "I wrote a 200-page technical report with CIARA. The consistency across chapters was perfect - it understood the entire document structure throughout the process.",
       name: "Marcus Johnson",
       title: "SENIOR ENGINEER",
     },
     {
       quote:
-        "As a novelist, I need my AI to understand character arcs and plot threads. CLARA's file management and persistent memory make complex storytelling effortless.",
+        "As a novelist, I need my AI to understand character arcs and plot threads. CIARA's file management and persistent memory make complex storytelling effortless.",
       name: "Elena Rodriguez",
       title: "BESTSELLING AUTHOR",
     },
@@ -39,7 +39,7 @@ const TestimonialsSection: React.FC = () => {
     },
     {
       quote:
-        "CLARA's outline indexing changed everything. I can jump between sections and the AI instantly understands where I am in my document structure.",
+        "CIARA's outline indexing changed everything. I can jump between sections and the AI instantly understands where I am in my document structure.",
       name: "Prof. Michael Zhang",
       title: "ACADEMIC RESEARCHER",
     },
@@ -78,7 +78,7 @@ const TestimonialsSection: React.FC = () => {
               lineHeight: "1.2",
             }}
           >
-            Writers who switched to CLARA
+            Writers who switched to CIARA
             <br />
             never looked back
           </h2>

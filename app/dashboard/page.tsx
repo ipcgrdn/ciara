@@ -203,7 +203,7 @@ export default function DashboardPage() {
     };
   }, [editingDocumentId]);
 
-  if (loading) return <Loading />;
+  if (loading) return null;
 
   if (!user) {
     return null; // 리다이렉트 처리 중
@@ -224,7 +224,7 @@ export default function DashboardPage() {
             {/* Logo */}
             <Link href="/" className="flex items-center space-x-3">
               <span className="text-2xl font-bold font-montserrat text-black tracking-wider">
-                ＣＬＡＲＡ
+                ＣＩＡＲＡ
               </span>
             </Link>
 
@@ -437,7 +437,7 @@ export default function DashboardPage() {
                 첫 번째 문서를 만들어보세요
               </h3>
               <p className="text-gray-600 text-center mb-8 max-w-md leading-relaxed">
-                CLARA와 함께 새로운 문서를 작성하고 AI의 도움을 받아보세요.
+                CIARA와 함께 새로운 문서를 작성하고 AI의 도움을 받아보세요.
               </p>
               <button
                 onClick={createNewDocument}

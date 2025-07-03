@@ -53,7 +53,7 @@ export default function Header() {
           >
             <Link href="/" className="flex items-center space-x-2 sm:space-x-3">
               <div className="text-white text-lg sm:text-xl font-bold tracking-wider">
-                CLARA
+                CIARA
               </div>
             </Link>
           </motion.div>

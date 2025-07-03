@@ -142,7 +142,7 @@ const ServicesSection: React.FC = () => {
 
   return (
     <section className="relative bg-black overflow-hidden">
-      {/* #1 Top section with CLARA SERVICES */}
+              {/* #1 Top section with CIARA SERVICES */}
       <div className="relative bg-blue-300 py-8 sm:py-12 lg:py-20 rounded-t-4xl rounded-b-4xl">
         {/* Decorative element - Hidden on mobile and tablet */}
         <div className="hidden xl:block absolute top-1/4 left-1/4 w-64 h-64 rotate-12 opacity-30">

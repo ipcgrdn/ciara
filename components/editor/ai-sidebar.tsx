@@ -26,6 +26,19 @@ interface Message {
   timestamp: Date;
   isLoading?: boolean;
   isStreaming?: boolean;
+  toolStatus?: {
+    toolName: string;
+    status: "starting" | "in_progress" | "completed" | "failed";
+    message: string;
+  }[];
+  orchestrationResult?: {
+    toolsUsed: Array<{
+      toolName: string;
+      success: boolean;
+      error?: string;
+    }>;
+    reasoning: string;
+  };
 }
 
 interface ChatSession {
@@ -47,7 +60,7 @@ export function AiSidebar({ className, documentId }: AiSidebarProps) {
   // localStorage에서 너비 설정 불러오기
   const [width, setWidth] = useState(() => {
     if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("clara-ai-sidebar-width");
+      const saved = localStorage.getItem("ciara-ai-sidebar-width");
       return saved ? parseInt(saved, 10) : 320;
     }
     return 320;
@@ -79,7 +92,7 @@ export function AiSidebar({ className, documentId }: AiSidebarProps) {
   const updateWidth = useCallback((newWidth: number) => {
     setWidth(newWidth);
     if (typeof window !== "undefined") {
-      localStorage.setItem("clara-ai-sidebar-width", newWidth.toString());
+      localStorage.setItem("ciara-ai-sidebar-width", newWidth.toString());
     }
   }, []);
 
@@ -120,6 +133,12 @@ export function AiSidebar({ className, documentId }: AiSidebarProps) {
 
   const handleSendMessage = useCallback(async () => {
     if (!inputValue.trim() || isLoading || !user || !documentId) return;
+
+    // 필수 파라미터 검증
+    if (!user.id) {
+      console.error("사용자 ID가 없습니다.");
+      return;
+    }
 
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -186,6 +205,8 @@ export function AiSidebar({ className, documentId }: AiSidebarProps) {
         },
         body: JSON.stringify({
           message: currentInputValue,
+          documentId: documentId,
+          userId: user.id,
           conversationHistory: conversationHistory,
         }),
         signal: controller.signal,
@@ -265,6 +286,48 @@ export function AiSidebar({ className, documentId }: AiSidebarProps) {
                           ...msg,
                           content: accumulatedContent,
                           isStreaming: true,
+                        }
+                      : msg
+                  )
+                );
+              }
+
+              // 도구 상태 메시지 처리
+              if (parsed.toolStatus) {
+                setMessages((prev) =>
+                  prev.map((msg) =>
+                    msg.id === loadingMessage.id
+                      ? {
+                          ...msg,
+                          toolStatus: [
+                            ...(msg.toolStatus || []),
+                            {
+                              toolName: parsed.toolStatus.toolName,
+                              status: parsed.toolStatus.status,
+                              message: parsed.toolStatus.message,
+                            },
+                          ],
+                          isStreaming: true,
+                        }
+                      : msg
+                  )
+                );
+              }
+
+              // 오케스트레이션 결과 처리 (final: true인 경우)
+              if (parsed.final && parsed.result) {
+                console.log("오케스트레이션 결과:", parsed.result);
+
+                // 메시지에 오케스트레이션 결과 추가
+                setMessages((prev) =>
+                  prev.map((msg) =>
+                    msg.id === loadingMessage.id
+                      ? {
+                          ...msg,
+                          orchestrationResult: {
+                            toolsUsed: parsed.result.toolsUsed || [],
+                            reasoning: parsed.result.reasoning || "",
+                          },
                         }
                       : msg
                   )
@@ -648,79 +711,152 @@ export function AiSidebar({ className, documentId }: AiSidebarProps) {
                             </div>
                           </div>
                         ) : (
-                          <div className="prose prose-sm max-w-none text-slate-700 text-xs leading-relaxed">
-                            <div className="relative">
-                              <ReactMarkdown
-                                components={{
-                                  p: ({ children }) => (
-                                    <p className="mb-2 last:mb-0">{children}</p>
-                                  ),
-                                  ul: ({ children }) => (
-                                    <ul className="mb-2 last:mb-0 pl-4">
-                                      {children}
-                                    </ul>
-                                  ),
-                                  ol: ({ children }) => (
-                                    <ol className="mb-2 last:mb-0 pl-4">
-                                      {children}
-                                    </ol>
-                                  ),
-                                  li: ({ children }) => (
-                                    <li className="mb-1">{children}</li>
-                                  ),
-                                  code: ({ children, className }) => {
-                                    const isInline = !className;
-                                    return isInline ? (
-                                      <code className="bg-slate-100 text-slate-800 px-1 py-0.5 rounded text-xs font-mono">
+                          <div className="space-y-3">
+                            {/* 도구 상태 메시지 표시 */}
+                            {message.toolStatus &&
+                              message.toolStatus.length > 0 && (
+                                <div className="space-y-2">
+                                  {message.toolStatus.map((status, index) => (
+                                    <div
+                                      key={index}
+                                      className={cn(
+                                        "flex items-center gap-2 px-3 py-2 rounded-lg text-xs",
+                                        "bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100",
+                                        "text-blue-800"
+                                      )}
+                                    >
+                                      <div className="flex items-center gap-2">
+                                        {status.status === "starting" && (
+                                          <div className="w-2 h-2 border border-black border-t-transparent rounded-full animate-spin" />
+                                        )}
+                                        {status.status === "in_progress" && (
+                                          <div className="w-2 h-2 border border-black border-t-transparent rounded-full animate-spin" />
+                                        )}
+                                        {status.status === "completed" && (
+                                          <div className="w-2 h-2 bg-black rounded-full" />
+                                        )}
+                                        {status.status === "failed" && (
+                                          <div className="w-2 h-2 bg-black rounded-full" />
+                                        )}
+                                        <span className="font-medium">
+                                          {status.message}
+                                        </span>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+
+                            {/* 메인 응답 내용 */}
+                            <div className="max-w-none text-slate-700 leading-relaxed">
+                              <div className="relative">
+                                <ReactMarkdown
+                                  components={{
+                                    p: ({ children }) => (
+                                      <p className="mb-3 last:mb-0 text-xs leading-relaxed text-slate-700">
                                         {children}
-                                      </code>
-                                    ) : (
-                                      <pre className="bg-slate-100 text-slate-800 p-3 rounded-lg text-xs font-mono overflow-x-auto">
-                                        <code>{children}</code>
-                                      </pre>
-                                    );
-                                  },
-                                  blockquote: ({ children }) => (
-                                    <blockquote className="border-l-4 border-slate-300 pl-4 my-2 italic text-slate-600">
-                                      {children}
-                                    </blockquote>
-                                  ),
-                                  h1: ({ children }) => (
-                                    <h1 className="text-lg font-bold mb-2">
-                                      {children}
-                                    </h1>
-                                  ),
-                                  h2: ({ children }) => (
-                                    <h2 className="text-base font-bold mb-2">
-                                      {children}
-                                    </h2>
-                                  ),
-                                  h3: ({ children }) => (
-                                    <h3 className="text-sm font-bold mb-1">
-                                      {children}
-                                    </h3>
-                                  ),
-                                }}
-                              >
-                                {message.content}
-                              </ReactMarkdown>
-                            </div>
-                            {!message.isStreaming && (
-                              <div className="flex items-center gap-1 mt-3">
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() =>
-                                    navigator.clipboard.writeText(
-                                      message.content
-                                    )
-                                  }
-                                  className="h-4 px-2 text-xs text-slate-400 hover:text-slate-600"
+                                      </p>
+                                    ),
+                                    ul: ({ children }) => (
+                                      <ul className="mb-3 last:mb-0 pl-4 list-disc list-outside space-y-1">
+                                        {children}
+                                      </ul>
+                                    ),
+                                    ol: ({ children }) => (
+                                      <ol className="mb-3 last:mb-0 pl-4 list-decimal list-outside space-y-1">
+                                        {children}
+                                      </ol>
+                                    ),
+                                    li: ({ children }) => (
+                                      <li className="text-xs leading-relaxed text-slate-700 mb-1">
+                                        {children}
+                                      </li>
+                                    ),
+                                    code: ({ children, className }) => {
+                                      const isInline =
+                                        !className?.includes("language-");
+                                      return isInline ? (
+                                        <code className="bg-slate-100 text-slate-800 px-1.5 py-0.5 rounded text-xs font-mono border">
+                                          {children}
+                                        </code>
+                                      ) : (
+                                        <pre className="bg-slate-50 border border-slate-200 text-slate-800 p-4 rounded-lg text-xs font-mono overflow-x-auto my-3">
+                                          <code className={className}>
+                                            {children}
+                                          </code>
+                                        </pre>
+                                      );
+                                    },
+                                    blockquote: ({ children }) => (
+                                      <blockquote className="border-l-4 border-slate-300 pl-4 my-3 italic text-slate-600 bg-slate-50/50 py-2 rounded-r-lg">
+                                        {children}
+                                      </blockquote>
+                                    ),
+                                    h1: ({ children }) => (
+                                      <h1 className="text-lg font-bold mb-3 mt-4 first:mt-0 text-slate-800 border-b border-slate-200 pb-2">
+                                        {children}
+                                      </h1>
+                                    ),
+                                    h2: ({ children }) => (
+                                      <h2 className="text-base font-bold mb-3 mt-4 first:mt-0 text-slate-800">
+                                        {children}
+                                      </h2>
+                                    ),
+                                    h3: ({ children }) => (
+                                      <h3 className="text-sm font-bold mb-2 mt-3 first:mt-0 text-slate-800">
+                                        {children}
+                                      </h3>
+                                    ),
+                                    strong: ({ children }) => (
+                                      <strong className="font-semibold text-slate-800">
+                                        {children}
+                                      </strong>
+                                    ),
+                                    em: ({ children }) => (
+                                      <em className="italic text-slate-700">
+                                        {children}
+                                      </em>
+                                    ),
+                                    a: ({ children, href }) => (
+                                      <a
+                                        href={href}
+                                        className="text-blue-600 hover:text-blue-800 underline"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                      >
+                                        {children}
+                                      </a>
+                                    ),
+                                  }}
                                 >
-                                  <Copy className="h-3 w-3" />
-                                </Button>
+                                  {
+                                    // 불릿 포인트들 사이에 줄바꿈 추가하는 전처리
+                                    message.content
+                                      .replace(/• /g, "\n• ")
+                                      .replace(/^\n/, "") // 맨 앞의 불필요한 줄바꿈 제거
+                                      .replace(/\n{3,}/g, "\n\n") // 과도한 줄바꿈 정리
+                                  }
+                                </ReactMarkdown>
                               </div>
-                            )}
+                              {!message.isStreaming && (
+                                <div className="mt-3 space-y-2">
+                                  <div className="flex items-center gap-1">
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() =>
+                                        navigator.clipboard.writeText(
+                                          message.content
+                                        )
+                                      }
+                                      className="h-4 px-2 text-xs text-slate-400 hover:text-slate-600"
+                                    >
+                                      <Copy className="h-3 w-3" />
+                                    </Button>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
                           </div>
                         )}
                       </div>
@@ -753,7 +889,7 @@ export function AiSidebar({ className, documentId }: AiSidebarProps) {
                 <Button
                   onClick={handleStopGeneration}
                   size="sm"
-                  className="h-8 w-8 p-0 bg-slate-800 hover:bg-slate-900 text-white rounded-md transition-colors shadow-sm"
+                  className="h-8 w-8 p-0 bg-white/80 hover:bg-white/90 text-slate-800 rounded-md transition-colors shadow-sm"
                 >
                   <Square className="h-4 w-4" />
                 </Button>
@@ -762,7 +898,7 @@ export function AiSidebar({ className, documentId }: AiSidebarProps) {
                   onClick={handleSendMessage}
                   disabled={!inputValue.trim()}
                   size="sm"
-                  className="h-8 w-8 p-0 bg-slate-800 hover:bg-slate-900 text-white rounded-md disabled:bg-slate-400 transition-colors shadow-sm"
+                  className="h-8 w-8 p-0 bg-white/80 hover:bg-white/90 text-slate-800 rounded-md disabled:bg-white/40 transition-colors shadow-sm"
                 >
                   <ArrowUp className="h-4 w-4" />
                 </Button>

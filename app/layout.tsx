@@ -20,7 +20,7 @@ const montserrat = Montserrat({
 });
 
 export const metadata: Metadata = {
-  title: "CLARA - AI-Powered Document Editor",
+      title: "CIARA - AI-Powered Document Editor",
   description:
     "긴 문서 작성을 위한 AI 어시스턴트. 논문, 보고서, 소설까지 완벽한 컨텍스트 이해로 함께 글을 써나가는 새로운 경험.",
 };

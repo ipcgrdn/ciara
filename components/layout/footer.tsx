@@ -19,7 +19,7 @@ export default function Footer() {
             className="col-span-1"
           >
             <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold font-montserrat mb-4 sm:mb-6 tracking-wider">
-              CLARA
+              CIARA
             </h2>
             <p className="text-xs sm:text-sm font-light font-montserrat leading-relaxed text-white/90">
               AI-powered long-form writing,
@@ -143,7 +143,7 @@ export default function Footer() {
           <div className="flex flex-col lg:flex-row justify-between items-center space-y-4 lg:space-y-0 text-center lg:text-left">
             {/* Copyright */}
             <p className="text-xs font-normal font-montserrat text-white/80 order-3 lg:order-1">
-              ©2025 CLARA. All rights reserved.
+              ©2025 CIARA. All rights reserved.
             </p>
 
             {/* Social Links */}

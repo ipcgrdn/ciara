@@ -1,24 +1,25 @@
 import { NextRequest } from "next/server";
-import { getAiService } from "@/lib/anthropic";
-
-// 대화 메시지 타입 정의
-interface ConversationMessage {
-  role: "user" | "assistant";
-  content: string;
-}
+import {
+  getOrchestrationAI,
+  OrchestrationMessage,
+  OrchestrationResult,
+  ToolStatusMessage,
+} from "@/lib/orchestration-ai";
 
 // 요청 바디 타입 정의
 interface RequestBody {
   message: string;
+  documentId: string;
+  userId: string;
   conversationHistory?: unknown[];
 }
 
 export async function POST(request: NextRequest) {
   try {
     const body: RequestBody = await request.json();
-    const { message, conversationHistory = [] } = body;
+    const { message, documentId, userId, conversationHistory = [] } = body;
 
-    // 메시지 검증
+    // 필수 파라미터 검증
     if (!message || typeof message !== "string") {
       return new Response(JSON.stringify({ error: "메시지가 필요합니다." }), {
         status: 400,
@@ -26,37 +27,99 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // 메시지가 ConversationMessage 타입인지 확인하는 타입 가드 함수
-    const isValidMessage = (msg: unknown): msg is ConversationMessage => {
+    if (!documentId || typeof documentId !== "string") {
+      return new Response(JSON.stringify({ error: "문서 ID가 필요합니다." }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    if (!userId || typeof userId !== "string") {
+      return new Response(
+        JSON.stringify({ error: "사용자 ID가 필요합니다." }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    // 메시지가 OrchestrationMessage 타입인지 확인하는 타입 가드 함수
+    const isValidMessage = (msg: unknown): msg is OrchestrationMessage => {
       return (
         msg !== null &&
         typeof msg === "object" &&
         "role" in msg &&
         "content" in msg &&
-        ["user", "assistant"].includes((msg as ConversationMessage).role) &&
-        typeof (msg as ConversationMessage).content === "string" &&
-        (msg as ConversationMessage).content.trim().length > 0
+        ["user", "assistant"].includes((msg as OrchestrationMessage).role) &&
+        typeof (msg as OrchestrationMessage).content === "string" &&
+        (msg as OrchestrationMessage).content.trim().length > 0
       );
     };
 
     // 대화 히스토리 검증 및 변환
-    const validHistory: ConversationMessage[] = Array.isArray(
+    const validHistory: OrchestrationMessage[] = Array.isArray(
       conversationHistory
     )
       ? conversationHistory.filter(isValidMessage).slice(-10) // 최근 10개만 사용
       : [];
 
-    // AI 서비스 호출
-    const aiService = getAiService();
-    const stream = aiService.chatStream(message, validHistory);
+    // 오케스트레이션 AI 서비스 호출
+    const orchestrationAI = await getOrchestrationAI();
+    const stream = orchestrationAI.orchestrateStream(
+      message,
+      documentId,
+      userId,
+      validHistory
+    );
 
     // ReadableStream 생성
     const readableStream = new ReadableStream({
       async start(controller) {
         try {
+          let finalResult: OrchestrationResult | null = null;
+
           for await (const chunk of stream) {
-            // Server-Sent Events 형식으로 데이터 전송
-            const data = `data: ${JSON.stringify({ text: chunk })}\n\n`;
+            if (typeof chunk === "string") {
+              // 일반 텍스트 응답 스트리밍
+              const data = `data: ${JSON.stringify({ text: chunk })}\n\n`;
+              controller.enqueue(new TextEncoder().encode(data));
+            } else if (
+              typeof chunk === "object" &&
+              chunk !== null &&
+              "type" in chunk &&
+              chunk.type === "tool_status"
+            ) {
+              // 도구 상태 메시지 스트리밍
+              const toolStatus = chunk as ToolStatusMessage;
+              const data = `data: ${JSON.stringify({
+                toolStatus: {
+                  toolName: toolStatus.toolName,
+                  status: toolStatus.status,
+                  message: toolStatus.message,
+                },
+              })}\n\n`;
+              controller.enqueue(new TextEncoder().encode(data));
+            } else if (
+              typeof chunk === "object" &&
+              chunk !== null &&
+              !("type" in chunk)
+            ) {
+              // 최종 결과 저장 (OrchestrationResult)
+              finalResult = chunk as OrchestrationResult;
+            }
+          }
+
+          // 최종 결과가 있으면 전송
+          if (finalResult) {
+            const result = finalResult as OrchestrationResult;
+            const data = `data: ${JSON.stringify({
+              result: {
+                toolsUsed: result.toolsUsed,
+                reasoning: result.reasoning,
+              },
+              final: true,
+            })}\n\n`;
             controller.enqueue(new TextEncoder().encode(data));
           }
 
@@ -64,9 +127,9 @@ export async function POST(request: NextRequest) {
           controller.enqueue(new TextEncoder().encode("data: [DONE]\n\n"));
           controller.close();
         } catch (error) {
-          console.error("Stream Error:", error);
+          console.error("Orchestration Stream Error:", error);
           const errorData = `data: ${JSON.stringify({
-            error: "AI 스트림 오류가 발생했습니다.",
+            error: "AI 처리 중 오류가 발생했습니다.",
           })}\n\n`;
           controller.enqueue(new TextEncoder().encode(errorData));
           controller.close();

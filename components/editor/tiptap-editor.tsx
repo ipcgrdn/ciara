@@ -108,7 +108,7 @@ export function TiptapEditor({
   // localStorage에서 사이드바 설정 불러오기
   const [showOutline, setShowOutline] = useState(() => {
     if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("clara-editor-show-outline");
+      const saved = localStorage.getItem("ciara-editor-show-outline");
       return saved !== null ? JSON.parse(saved) : initialShowOutline;
     }
     return initialShowOutline;
@@ -116,7 +116,7 @@ export function TiptapEditor({
 
   const [showAiChat, setShowAiChat] = useState(() => {
     if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("clara-editor-show-ai-chat");
+      const saved = localStorage.getItem("ciara-editor-show-ai-chat");
       return saved !== null ? JSON.parse(saved) : initialShowAiChat;
     }
     return initialShowAiChat;
@@ -132,7 +132,7 @@ export function TiptapEditor({
     setShowOutline(newValue);
     if (typeof window !== "undefined") {
       localStorage.setItem(
-        "clara-editor-show-outline",
+        "ciara-editor-show-outline",
         JSON.stringify(newValue)
       );
     }
@@ -143,7 +143,7 @@ export function TiptapEditor({
     setShowAiChat(newValue);
     if (typeof window !== "undefined") {
       localStorage.setItem(
-        "clara-editor-show-ai-chat",
+        "ciara-editor-show-ai-chat",
         JSON.stringify(newValue)
       );
     }
