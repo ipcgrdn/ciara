@@ -333,10 +333,6 @@ export function IndexSidebar({
     }
   };
 
-  const supportedTypesText = `지원 형식: ${SUPPORTED_FILE_EXTENSIONS.join(
-    ", "
-  )} (최대 ${MAX_FILE_SIZE / 1024 / 1024}MB)`;
-
   return (
     <div
       ref={sidebarRef}
