@@ -9,13 +9,9 @@ import {
   saveDocumentIndex,
 } from "@/lib/index";
 import {
-  Save,
-  Share2,
   BookOpen,
   List,
-  Download,
   Upload,
-  Settings,
   ChevronDown,
   ChevronRight,
   FileText,
@@ -78,7 +74,7 @@ export function IndexSidebar({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const MIN_WIDTH = 240; // w-60
-  const MAX_WIDTH = 480; // 최대 너비 제한
+  const MAX_WIDTH = 400; // 최대 너비 제한
 
   // 너비 변경 시 localStorage에 저장
   const updateWidth = useCallback((newWidth: number) => {
@@ -347,32 +343,7 @@ export function IndexSidebar({
       className={cn("relative h-full flex", className)}
       style={{ width: `${width}px` }}
     >
-      <Card className="flex-1 bg-white/40 border-slate-200/60 shadow-lg backdrop-blur-sm flex flex-col p-0">
-        {/* 최상단 아이콘들 - 애플 스타일 */}
-        <div className="border-b border-slate-200 flex-shrink-0">
-          <div className="flex items-center justify-center gap-3 py-3">
-            <button className="p-2 rounded-full hover:bg-slate-200/50 transition-all duration-200 hover:scale-105">
-              <Save className="w-4 h-4 text-slate-600" />
-            </button>
-            <button className="p-2 rounded-full hover:bg-slate-200/50 transition-all duration-200 hover:scale-105">
-              <Share2 className="w-4 h-4 text-slate-600" />
-            </button>
-            <button className="p-2 rounded-full hover:bg-slate-200/50 transition-all duration-200 hover:scale-105">
-              <Download className="w-4 h-4 text-slate-600" />
-            </button>
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              className="p-2 rounded-full hover:bg-slate-200/50 transition-all duration-200 hover:scale-105"
-              title={supportedTypesText}
-            >
-              <Upload className="w-4 h-4 text-slate-600" />
-            </button>
-            <button className="p-2 rounded-full hover:bg-slate-200/50 transition-all duration-200 hover:scale-105">
-              <Settings className="w-4 h-4 text-slate-600" />
-            </button>
-          </div>
-        </div>
-
+      <Card className="flex-1 bg-white/40 border-slate-200/60 flex flex-col p-0">
         {/* 숨겨진 파일 입력 */}
         <input
           ref={fileInputRef}
@@ -395,12 +366,8 @@ export function IndexSidebar({
           {/* Knowledge 폴더 섹션 */}
           <div
             className={cn(
-              "bg-white/40 transition-all duration-300 flex flex-col",
-              isKnowledgeExpanded && isIndexExpanded
-                ? "flex-1 max-h-[50%]"
-                : isKnowledgeExpanded
-                ? "flex-1"
-                : "flex-none",
+              "bg-white/40 transition-all duration-300 flex flex-col overflow-hidden",
+              isKnowledgeExpanded ? "max-h-[50%]" : "flex-none",
               isDragOver &&
                 "bg-blue-50/80 border-2 border-dashed border-blue-300"
             )}
@@ -432,7 +399,7 @@ export function IndexSidebar({
             </button>
 
             {isKnowledgeExpanded && (
-              <div className="px-4 pb-4 flex-1 flex flex-col min-h-0">
+              <div className="px-4 pb-4 flex-1 flex flex-col min-h-0 overflow-hidden">
                 {knowledgeItems.length === 0 && !isLoading ? (
                   <div
                     className={cn(
@@ -450,7 +417,7 @@ export function IndexSidebar({
                     </div>
                   </div>
                 ) : (
-                  <div className="flex-1 min-h-0">
+                  <div className="flex-1 min-h-0 overflow-hidden">
                     <div className="space-y-2 h-full overflow-y-auto pr-1">
                       {knowledgeItems.map((item) => (
                         <div
@@ -527,12 +494,8 @@ export function IndexSidebar({
           {/* Index 폴더 섹션 */}
           <div
             className={cn(
-              "bg-white/40 flex flex-col",
-              isKnowledgeExpanded && isIndexExpanded
-                ? "flex-1 max-h-[50%]"
-                : isIndexExpanded
-                ? "flex-1"
-                : "flex-none"
+              "bg-white/40 flex flex-col overflow-hidden",
+              isIndexExpanded ? "max-h-[50%]" : "flex-none"
             )}
           >
             <div className="w-full p-4 flex items-center gap-2 flex-none">
@@ -559,10 +522,10 @@ export function IndexSidebar({
               </button>
             </div>
             {isIndexExpanded && (
-              <div className="px-4 pb-4 flex-1 flex flex-col min-h-0">
-                <div className="bg-white/60 rounded-lg border border-slate-200/40 p-3 flex-1 flex flex-col min-h-0">
+              <div className="px-4 pb-4 flex-1 flex flex-col min-h-0 overflow-hidden">
+                <div className="bg-white/60 rounded-lg border border-slate-200/40 p-3 flex-1 flex flex-col min-h-0 overflow-hidden">
                   {outline.length > 0 ? (
-                    <div className="flex-1 min-h-0">
+                    <div className="flex-1 min-h-0 overflow-hidden">
                       <div className="space-y-2 h-full overflow-y-auto pr-1">
                         {outline.map((item) => (
                           <div
@@ -600,15 +563,15 @@ export function IndexSidebar({
       {/* 리사이즈 핸들 */}
       <div
         className={cn(
-          "w-1 cursor-col-resize hover:bg-yellow-300/60 transition-all duration-300 flex-shrink-0",
-          isResizing ? "bg-yellow-400/80" : "bg-transparent"
+          "w-1 cursor-col-resize hover:bg-blue-300/60 transition-all duration-300 flex-shrink-0",
+          isResizing ? "bg-blue-400/80" : "bg-transparent"
         )}
         onMouseDown={handleMouseDown}
         style={{ transition: "background-color 0.3s ease" }}
       >
         <div className="w-full h-full relative">
           {/* 리사이즈 인디케이터 */}
-          <div className="absolute inset-y-0 left-1/2 transform -translate-x-1/2 w-0.5 bg-transparent hover:bg-yellow-300/50 transition-all duration-300" />
+          <div className="absolute inset-y-0 left-1/2 transform -translate-x-1/2 w-0.5 bg-transparent hover:bg-blue-300/50 transition-all duration-300" />
         </div>
       </div>
 

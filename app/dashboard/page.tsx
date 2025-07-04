@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
-import { Card, CardContent } from "@/components/ui/card";
 import Link from "next/link";
 import { v4 as uuidv4 } from "uuid";
 import {
@@ -17,9 +16,10 @@ import {
   TrashIcon,
   DocumentTextIcon,
   ClockIcon,
-  ArrowRightIcon,
   ArrowUpTrayIcon,
+  ChevronRightIcon,
 } from "@heroicons/react/24/outline";
+import { Loader2Icon } from "lucide-react";
 import Image from "next/image";
 import {
   getUserDocuments,
@@ -28,7 +28,6 @@ import {
   formatLastModified,
   type Document,
 } from "@/lib/documents";
-import Loading from "@/components/layout/loading";
 
 // HTML/마크다운 태그를 제거하고 순수 텍스트만 추출하는 함수
 function stripHtmlAndMarkdown(text: string): string {
@@ -203,7 +202,14 @@ export default function DashboardPage() {
     };
   }, [editingDocumentId]);
 
-  if (loading) return null;
+  if (loading)
+    return (
+      <div className="min-h-screen bg-[#fafbfd] flex items-center justify-center">
+        <div className="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center">
+          <Loader2Icon className="w-5 h-5 text-gray-700" />
+        </div>
+      </div>
+    );
 
   if (!user) {
     return null; // 리다이렉트 처리 중
@@ -217,22 +223,38 @@ export default function DashboardPage() {
 
   return (
     <main className="min-h-screen bg-white">
+      <div className="absolute inset-0 invert opacity-10">
+        <div className="absolute inset-0">
+          <Image
+            src="/assets/background.svg"
+            alt="Background"
+            fill
+            className="object-cover filter grayscale"
+            priority
+          />
+        </div>
+      </div>
+
       {/* Navigation */}
-      <nav className="border-b border-gray-100 sticky top-0 z-40 backdrop-blur-sm bg-white/80">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <nav className="border-b border-gray-100/50 sticky top-0 z-40 backdrop-blur-xl bg-transparent">
+        <div className="max-w-6xl mx-auto px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
             <Link href="/" className="flex items-center space-x-3">
-              <span className="text-2xl font-bold font-montserrat text-black tracking-wider">
-                ＣＩＡＲＡ
-              </span>
+              <Image
+                src="/logo.svg"
+                alt="Logo"
+                width={100}
+                height={100}
+                className="w-32 h-32 invert"
+              />
             </Link>
 
             {/* Profile Section */}
             <div className="flex items-center space-x-4">
               <div className="relative" data-profile-dropdown>
                 <button
-                  className="flex items-center space-x-3 p-2 rounded-xl hover:bg-gray-50 transition-all duration-200"
+                  className="flex items-center space-x-3 p-2 rounded-full hover:bg-gray-50/80 transition-all duration-200"
                   onClick={() =>
                     setIsProfileDropdownOpen(!isProfileDropdownOpen)
                   }
@@ -259,10 +281,10 @@ export default function DashboardPage() {
                       initial={{ opacity: 0, scale: 0.95, y: -10 }}
                       animate={{ opacity: 1, scale: 1, y: 0 }}
                       exit={{ opacity: 0, scale: 0.95, y: -10 }}
-                      transition={{ duration: 0.2 }}
-                      className="absolute right-0 top-full mt-2 w-64 bg-white border border-gray-200 rounded-xl shadow-lg z-[9999]"
+                      transition={{ duration: 0.15 }}
+                      className="absolute right-0 top-full mt-3 w-64 bg-white/90 backdrop-blur-xl border border-gray-200/50 rounded-2xl shadow-xl z-[9999]"
                     >
-                      <div className="p-4 border-b border-gray-100">
+                      <div className="p-4 border-b border-gray-100/50">
                         <div className="flex items-center space-x-3">
                           {userProfileImage ? (
                             <Image
@@ -289,19 +311,19 @@ export default function DashboardPage() {
                       </div>
 
                       <div className="p-2">
-                        <button className="w-full flex items-center space-x-3 px-3 py-2.5 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors">
+                        <button className="w-full flex items-center space-x-3 px-3 py-2.5 text-sm text-gray-700 hover:bg-gray-50/80 rounded-xl transition-colors">
                           <Cog6ToothIcon className="h-4 w-4" />
                           <span>계정 설정</span>
                         </button>
-                        <button className="w-full flex items-center space-x-3 px-3 py-2.5 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors">
+                        <button className="w-full flex items-center space-x-3 px-3 py-2.5 text-sm text-gray-700 hover:bg-gray-50/80 rounded-xl transition-colors">
                           <UserIcon className="h-4 w-4" />
                           <span>프로필 관리</span>
                         </button>
 
-                        <div className="border-t border-gray-100 mt-2 pt-2">
+                        <div className="border-t border-gray-100/50 mt-2 pt-2">
                           <button
                             onClick={signOut}
-                            className="w-full flex items-center space-x-3 px-3 py-2.5 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                            className="w-full flex items-center space-x-3 px-3 py-2.5 text-sm text-red-600 hover:bg-red-50/80 rounded-xl transition-colors"
                           >
                             <svg
                               className="h-4 w-4"
@@ -329,7 +351,7 @@ export default function DashboardPage() {
         </div>
       </nav>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-6xl mx-auto px-6 lg:px-8 py-12">
         {/* Header Section */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -337,80 +359,82 @@ export default function DashboardPage() {
           transition={{ duration: 0.6 }}
           className="mb-12 text-center"
         >
-          <h1 className="text-2xl md:text-4xl font-bold font-montserrat text-black mb-4 tracking-wide">
+          <h1 className="text-lg md:text-2xl font-bold font-montserrat text-black mb-4 tracking-wide">
             환영합니다,{" "}
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-gray-800 to-black">
               {userName?.split(" ")[0] || "User"}님
             </span>
           </h1>
-          <p className="text-xl text-black opacity-50">
+          <p className="text-lg text-black opacity-50">
             오늘은 어떤 글을 작성해볼까요?
           </p>
         </motion.div>
 
-        {/* Quick Actions Grid */}
+        {/* Quick Actions */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.1 }}
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12"
+          className="mb-16"
         >
-          {/* New Document Card */}
-          <Card
-            className="group bg-white border border-gray-200 hover:border-black hover:shadow-xl transition-all duration-300 cursor-pointer overflow-hidden"
-            onClick={createNewDocument}
-          >
-            <CardContent className="p-8">
-              <div className="flex items-center justify-between mb-6">
-                <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                  <PlusIcon className="h-6 w-6 text-black" />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {/* New Document Button */}
+            <button
+              onClick={createNewDocument}
+              className="group flex items-center justify-between bg-white/50 backdrop-blur-sm border border-gray-200/50 rounded-2xl p-6 hover:bg-white/80 hover:border-gray-300/50 transition-all duration-300 hover:shadow-lg"
+            >
+              <div className="flex items-center space-x-4">
+                <div className="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                  <PlusIcon className="h-5 w-5 text-gray-700" />
                 </div>
-                <ArrowRightIcon className="h-5 w-5 text-gray-400 group-hover:text-black group-hover:translate-x-1 transition-all duration-300" />
+                <div className="text-left">
+                  <h3 className="text-lg font-semibold font-montserrat text-black">
+                    새 문서 작성
+                  </h3>
+                  <p className="text-sm text-gray-600">
+                    AI와 함께 문서를 작성해보세요
+                  </p>
+                </div>
               </div>
-              <h3 className="text-xl font-semibold font-montserrat text-black mb-2">
-                새 문서 작성
-              </h3>
-              <p className="text-gray-600 text-sm leading-relaxed">
-                AI와 함께 새로운 아이디어를 문서로 만들어보세요
-              </p>
-            </CardContent>
-          </Card>
+              <ChevronRightIcon className="h-5 w-5 text-gray-400 group-hover:text-gray-700 group-hover:translate-x-1 transition-all duration-300" />
+            </button>
 
-          {/* Upload Document from file */}
-          <Card className="group bg-white border border-gray-200 hover:border-gray-400 hover:shadow-lg transition-all duration-300 cursor-pointer md:col-span-2 lg:col-span-1">
-            <CardContent className="p-8">
-              <div className="flex items-center justify-between mb-6">
-                <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                  <ArrowUpTrayIcon className="h-6 w-6 text-gray-700" />
+            {/* Secondary Actions */}
+            <button className="group flex items-center justify-between bg-white/50 backdrop-blur-sm border border-gray-200/50 rounded-2xl p-6 hover:bg-white/80 hover:border-gray-300/50 transition-all duration-300 hover:shadow-lg">
+              <div className="flex items-center space-x-4">
+                <div className="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                  <ArrowUpTrayIcon className="h-5 w-5 text-gray-700" />
                 </div>
-                <ArrowRightIcon className="h-5 w-5 text-gray-400 group-hover:text-gray-700 group-hover:translate-x-1 transition-all duration-300" />
+                <div className="text-left">
+                  <h3 className="text-lg font-semibold font-montserrat text-black">
+                    파일 업로드
+                  </h3>
+                  <p className="text-sm text-gray-600">
+                    작업하시던 문서가 있나요?
+                  </p>
+                </div>
               </div>
-              <h3 className="text-xl font-semibold font-montserrat text-black mb-2">
-                파일 업로드
-              </h3>
-              <p className="text-gray-600 text-sm leading-relaxed">
-                작업하시던 문서가 있나요?
-              </p>
-            </CardContent>
-          </Card>
+              <ChevronRightIcon className="h-5 w-5 text-gray-400 group-hover:text-gray-700 group-hover:translate-x-1 transition-all duration-300" />
+            </button>
 
-          {/* Templates Card */}
-          <Card className="group bg-white border border-gray-200 hover:border-gray-400 hover:shadow-lg transition-all duration-300 cursor-pointer">
-            <CardContent className="p-8">
-              <div className="flex items-center justify-between mb-6">
-                <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                  <FolderIcon className="h-6 w-6 text-gray-700" />
+            {/* Templates Card */}
+            <button className="group flex items-center justify-between bg-white/50 backdrop-blur-sm border border-gray-200/50 rounded-2xl p-6 hover:bg-white/80 hover:border-gray-300/50 transition-all duration-300 hover:shadow-lg">
+              <div className="flex items-center space-x-4">
+                <div className="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                  <FolderIcon className="h-5 w-5 text-gray-700" />
                 </div>
-                <ArrowRightIcon className="h-5 w-5 text-gray-400 group-hover:text-gray-700 group-hover:translate-x-1 transition-all duration-300" />
+                <div className="text-left">
+                  <h3 className="text-lg font-semibold font-montserrat text-black">
+                    템플릿 살펴보기
+                  </h3>
+                  <p className="text-sm text-gray-600">
+                    문서 템플릿으로 빠르게 시작하세요
+                  </p>
+                </div>
               </div>
-              <h3 className="text-xl font-semibold font-montserrat text-black mb-2">
-                템플릿 살펴보기
-              </h3>
-              <p className="text-gray-600 text-sm leading-relaxed">
-                다양한 문서 템플릿으로 빠르게 시작하세요
-              </p>
-            </CardContent>
-          </Card>
+              <ChevronRightIcon className="h-5 w-5 text-gray-400 group-hover:text-gray-700 group-hover:translate-x-1 transition-all duration-300" />
+            </button>
+          </div>
         </motion.div>
 
         {/* Documents Section */}
@@ -419,136 +443,137 @@ export default function DashboardPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.3 }}
         >
-          <div className="flex mb-8">
-            <h2 className="text-2xl font-bold font-montserrat text-black">
-              내 문서
+          <div className="mb-8">
+            <h2 className="text-lg font-bold font-montserrat text-black">
+              최근 문서
             </h2>
           </div>
 
-          {isLoadingDocuments ? (
-            <Loading />
-          ) : documents.length === 0 ? (
+          {!isLoadingDocuments && documents.length === 0 ? (
             /* Empty State */
-            <div className="flex flex-col items-center justify-center py-24">
-              <div className="w-24 h-24 bg-gray-50 rounded-3xl flex items-center justify-center mb-8">
-                <DocumentTextIcon className="w-12 h-12 text-gray-400" />
+            <div className="flex flex-col items-center justify-center py-20 bg-white/30 backdrop-blur-sm border border-gray-200/50 rounded-2xl">
+              <div className="w-16 h-16 bg-gray-50 rounded-2xl flex items-center justify-center mb-4">
+                <DocumentTextIcon className="w-8 h-8 text-gray-400" />
               </div>
-              <h3 className="text-2xl font-semibold font-montserrat text-black mb-4">
+              <h3 className="text-lg font-semibold font-montserrat text-black mb-2">
                 첫 번째 문서를 만들어보세요
               </h3>
-              <p className="text-gray-600 text-center mb-8 max-w-md leading-relaxed">
-                CIARA와 함께 새로운 문서를 작성하고 AI의 도움을 받아보세요.
+              <p className="text-gray-600 text-center mb-6 max-w-md text-sm">
+                Ciara와 함께 새로운 문서 작성 경험을 시작해보세요.
               </p>
               <button
                 onClick={createNewDocument}
-                className="bg-gray-200 text-black px-8 py-3 rounded-xl font-medium hover:bg-gray-300 transition-colors duration-200 flex items-center space-x-2"
+                className="bg-gray-100/50 text-black px-6 py-3 rounded-xl font-medium hover:bg-gray-100 transition-colors duration-200 flex items-center space-x-2"
               >
-                <PlusIcon className="h-5 w-5" />
+                <PlusIcon className="h-4 w-4" />
                 <span>새 문서 만들기</span>
               </button>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            /* Document List */
+            <div className="space-y-3">
               {documents.map((doc: Document, index: number) => (
                 <motion.div
                   key={doc.id}
-                  initial={{ opacity: 0, y: 20 }}
+                  initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.4, delay: 0.1 * index }}
-                  className={`group relative bg-white border border-gray-200 rounded-2xl p-6 hover:border-gray-400 hover:shadow-lg transition-all duration-300 cursor-pointer ${
+                  transition={{ duration: 0.3, delay: 0.05 * index }}
+                  className={`group flex items-center justify-between bg-white/50 backdrop-blur-sm border border-gray-200/50 rounded-xl p-4 hover:bg-white/80 hover:border-gray-300/50 transition-all duration-300 cursor-pointer ${
                     documentMenuOpen === doc.id ? "z-[9999]" : "z-10"
                   }`}
                   onClick={() => handleDocumentClick(doc.id)}
                 >
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center">
-                      <DocumentTextIcon className="h-5 w-5 text-gray-600" />
+                  <div className="flex items-center space-x-4 flex-1">
+                    <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
+                      <DocumentTextIcon className="h-4 w-4 text-gray-600" />
                     </div>
 
-                    {/* More Options Button */}
-                    <div className="relative" data-document-menu>
-                      <button
-                        className="opacity-0 group-hover:opacity-100 p-2 rounded-lg hover:bg-gray-100 transition-all duration-200"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setDocumentMenuOpen(
-                            documentMenuOpen === doc.id ? null : doc.id
-                          );
-                        }}
-                      >
-                        <EllipsisVerticalIcon className="h-5 w-5 text-gray-500" />
-                      </button>
+                    <div className="flex-1 min-w-0">
+                      {editingDocumentId === doc.id ? (
+                        <input
+                          type="text"
+                          value={editingTitle}
+                          onChange={(e) => setEditingTitle(e.target.value)}
+                          onBlur={() => {
+                            setTimeout(finishEditingTitle, 100);
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              finishEditingTitle();
+                            } else if (e.key === "Escape") {
+                              cancelEditingTitle();
+                            }
+                          }}
+                          className="w-full font-semibold text-black bg-white border border-gray-200 rounded-lg px-3 py-1 text-sm focus:outline-none focus:border-black"
+                          autoFocus
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                      ) : (
+                        <h4 className="font-semibold text-black text-sm truncate">
+                          {doc.title}
+                        </h4>
+                      )}
 
-                      {/* Dropdown Menu */}
-                      <AnimatePresence>
-                        {documentMenuOpen === doc.id && (
-                          <motion.div
-                            initial={{ opacity: 0, scale: 0.95, y: -10 }}
-                            animate={{ opacity: 1, scale: 1, y: 0 }}
-                            exit={{ opacity: 0, scale: 0.95, y: -10 }}
-                            transition={{ duration: 0.15 }}
-                            className="absolute right-0 top-full mt-2 w-40 bg-white border border-gray-200 rounded-xl shadow-lg z-[9999]"
-                          >
-                            <button
-                              className="w-full flex items-center space-x-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors rounded-t-xl"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                startEditingTitle(doc);
-                              }}
-                            >
-                              <PencilIcon className="h-4 w-4" />
-                              <span>제목 수정</span>
-                            </button>
-                            <button
-                              className="w-full flex items-center space-x-3 px-4 py-3 text-sm text-red-600 hover:bg-red-50 transition-colors rounded-b-xl"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleDeleteDocument(doc.id);
-                              }}
-                            >
-                              <TrashIcon className="h-4 w-4" />
-                              <span>삭제</span>
-                            </button>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
+                      <div className="flex items-center space-x-4 mt-1">
+                        <p className="text-xs text-gray-500 truncate max-w-md">
+                          {stripHtmlAndMarkdown(doc.content) ||
+                            "내용이 없습니다."}
+                        </p>
+                        <div className="flex items-center text-xs text-gray-400">
+                          <ClockIcon className="h-3 w-3 mr-1" />
+                          <span>{formatLastModified(doc.last_modified)}</span>
+                        </div>
+                      </div>
                     </div>
                   </div>
 
-                  <div className="flex-1">
-                    {editingDocumentId === doc.id ? (
-                      <input
-                        type="text"
-                        value={editingTitle}
-                        onChange={(e) => setEditingTitle(e.target.value)}
-                        onBlur={() => {
-                          setTimeout(finishEditingTitle, 100);
-                        }}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") {
-                            finishEditingTitle();
-                          } else if (e.key === "Escape") {
-                            cancelEditingTitle();
-                          }
-                        }}
-                        className="w-full font-semibold font-montserrat text-black mb-3 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-lg focus:outline-none focus:border-black"
-                        autoFocus
-                        onClick={(e) => e.stopPropagation()}
-                      />
-                    ) : (
-                      <h4 className="font-semibold font-montserrat text-black mb-3 text-lg line-clamp-2 leading-tight">
-                        {doc.title}
-                      </h4>
-                    )}
+                  {/* More Options Button */}
+                  <div className="relative" data-document-menu>
+                    <button
+                      className="opacity-0 group-hover:opacity-100 p-2 rounded-lg hover:bg-gray-100/80 transition-all duration-200"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setDocumentMenuOpen(
+                          documentMenuOpen === doc.id ? null : doc.id
+                        );
+                      }}
+                    >
+                      <EllipsisVerticalIcon className="h-4 w-4 text-gray-500" />
+                    </button>
 
-                    <p className="text-gray-600 text-sm mb-4 line-clamp-2 leading-relaxed">
-                      {stripHtmlAndMarkdown(doc.content) || "내용이 없습니다."}
-                    </p>
-
-                    <div className="flex items-center text-xs text-gray-500">
-                      <ClockIcon className="h-3 w-3 mr-1" />
-                      <span>{formatLastModified(doc.last_modified)}</span>
-                    </div>
+                    {/* Dropdown Menu */}
+                    <AnimatePresence>
+                      {documentMenuOpen === doc.id && (
+                        <motion.div
+                          initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                          animate={{ opacity: 1, scale: 1, y: 0 }}
+                          exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                          transition={{ duration: 0.15 }}
+                          className="absolute right-0 top-full mt-2 w-40 bg-white/90 backdrop-blur-xl border border-gray-200/50 rounded-xl shadow-xl z-[9999]"
+                        >
+                          <button
+                            className="w-full flex items-center space-x-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50/80 transition-colors rounded-t-xl"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              startEditingTitle(doc);
+                            }}
+                          >
+                            <PencilIcon className="h-4 w-4" />
+                            <span>제목 수정</span>
+                          </button>
+                          <button
+                            className="w-full flex items-center space-x-3 px-4 py-3 text-sm text-red-600 hover:bg-red-50/80 transition-colors rounded-b-xl"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteDocument(doc.id);
+                            }}
+                          >
+                            <TrashIcon className="h-4 w-4" />
+                            <span>삭제</span>
+                          </button>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </div>
                 </motion.div>
               ))}

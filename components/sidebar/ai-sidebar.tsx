@@ -18,6 +18,7 @@ import {
   Trash2,
   Clock,
 } from "lucide-react";
+import { Card } from "../ui/card";
 
 interface Message {
   id: string;
@@ -86,7 +87,7 @@ export function AiSidebar({ className, documentId }: AiSidebarProps) {
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
   const MIN_WIDTH = 240;
-  const MAX_WIDTH = 480;
+  const MAX_WIDTH = 400;
 
   // 너비 변경 시 localStorage에 저장
   const updateWidth = useCallback((newWidth: number) => {
@@ -561,19 +562,19 @@ export function AiSidebar({ className, documentId }: AiSidebarProps) {
       {/* 리사이즈 핸들 */}
       <div
         className={cn(
-          "w-1 cursor-col-resize hover:bg-yellow-300/60 transition-all duration-300 flex-shrink-0",
-          isResizing ? "bg-yellow-400/80" : "bg-transparent"
+          "w-1 cursor-col-resize hover:bg-blue-300/60 transition-all duration-300 flex-shrink-0",
+          isResizing ? "bg-blue-400/80" : "bg-transparent"
         )}
         onMouseDown={handleMouseDown}
         style={{ transition: "background-color 0.3s ease" }}
       >
         <div className="w-full h-full relative">
-          <div className="absolute inset-y-0 left-1/2 transform -translate-x-1/2 w-0.5 bg-transparent hover:bg-yellow-300/50 transition-all duration-300" />
+          <div className="absolute inset-y-0 left-1/2 transform -translate-x-1/2 w-0.5 bg-transparent hover:bg-blue-300/50 transition-all duration-300" />
         </div>
       </div>
 
       {/* AI 사이드바 메인 콘텐츠 */}
-      <div className="flex-1 flex flex-col h-full backdrop-blur-md bg-white/80 border-l border-white/20 overflow-hidden">
+      <Card className="flex-1 flex flex-col p-0 bg-white/40 border-slate-200/60 overflow-hidden">
         {/* 상단 헤더 - 고정 */}
         <div className="flex-shrink-0 px-3 py-2 border-b border-black/5 bg-white/80 backdrop-blur-sm">
           <div className="flex items-center justify-between">
@@ -608,14 +609,11 @@ export function AiSidebar({ className, documentId }: AiSidebarProps) {
 
         {/* 중단 채팅 영역 - 스크롤 가능 */}
         <ScrollArea ref={scrollAreaRef} className="flex-1 px-3 min-h-0">
-          <div className="py-3 space-y-3">
+          <div className="space-y-3">
             {showHistory ? (
               // 히스토리 뷰
-              <div className="space-y-2 bg-black/5 rounded-lg p-2">
+              <div className="space-y-2 p-2">
                 <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-xs font-medium text-slate-600">
-                    History
-                  </h3>
                   {isLoadingHistory && (
                     <div className="w-3 h-3 border border-slate-300 border-t-transparent rounded-full animate-spin" />
                   )}
@@ -906,7 +904,7 @@ export function AiSidebar({ className, documentId }: AiSidebarProps) {
             </div>
           </div>
         </div>
-      </div>
+      </Card>
     </div>
   );
 }

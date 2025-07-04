@@ -81,15 +81,21 @@ export async function createDocument(
   documentData: CreateDocumentData
 ): Promise<Document> {
   try {
-    const insertData = documentData.id 
-      ? documentData 
-      : { ...documentData, id: undefined }; // Let DB generate UUID if no ID provided
+    const now = new Date().toISOString();
+    const insertData = {
+      ...documentData,
+      content: documentData.content || "",
+      created_at: now,
+      updated_at: now,
+      last_modified: now,
+      id: documentData.id || undefined, // Let DB generate UUID if no ID provided
+    };
 
     const { data, error } = await supabase
       .from("documents")
-      .upsert([insertData], { 
-        onConflict: 'id',
-        ignoreDuplicates: false 
+      .upsert([insertData], {
+        onConflict: "id",
+        ignoreDuplicates: false,
       })
       .select()
       .single();
@@ -114,9 +120,14 @@ export async function updateDocument(
   updateData: UpdateDocumentData
 ): Promise<Document> {
   try {
+    const updateWithTimestamp = {
+      ...updateData,
+      last_modified: new Date().toISOString(),
+    };
+
     const { data, error } = await supabase
       .from("documents")
-      .update(updateData)
+      .update(updateWithTimestamp)
       .eq("id", documentId)
       .select()
       .single();

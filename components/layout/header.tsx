@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { Menu, X, ChevronDown } from "lucide-react";
+import Image from "next/image";
 
 export default function Header() {
   const { user } = useAuth();
@@ -52,9 +53,13 @@ export default function Header() {
             className="flex items-center"
           >
             <Link href="/" className="flex items-center space-x-2 sm:space-x-3">
-              <div className="text-white text-lg sm:text-xl font-bold tracking-wider">
-                CIARA
-              </div>
+              <Image
+                src="/logo.svg"
+                alt="CIARA"
+                width={32}
+                height={32}
+                className="w-32 h-32"
+              />
             </Link>
           </motion.div>
 
