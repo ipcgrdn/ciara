@@ -1,6 +1,5 @@
 // Define Liveblocks types for your application
 // https://liveblocks.io/docs/api-reference/liveblocks-react#Typing-your-data
-import * as Y from "yjs";
 
 declare global {
   interface Liveblocks {
@@ -12,8 +11,7 @@ declare global {
 
     // The Storage tree for the room, for useMutation, useStorage, etc.
     Storage: {
-      // TipTap 에디터 내용을 Y.Doc으로 저장
-      content: Y.Doc;
+      // TipTap 에디터 내용을 위한 빈 스토리지 (Yjs는 별도로 관리)
     };
 
     // Custom user info set when authenticating with a secret key
