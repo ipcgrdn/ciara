@@ -32,7 +32,6 @@ import {
   validateFile,
   getFileType,
   SUPPORTED_FILE_EXTENSIONS,
-  MAX_FILE_SIZE,
 } from "@/lib/knowledge";
 
 interface IndexSidebarProps {
