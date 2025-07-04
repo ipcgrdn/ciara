@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import Link from "next/link";
 import { v4 as uuidv4 } from "uuid";
+import { createPortal } from "react-dom";
 import {
   PlusIcon,
   Cog6ToothIcon,
@@ -74,6 +75,10 @@ export default function DashboardPage() {
   );
   const [editingTitle, setEditingTitle] = useState("");
   const [documentMenuOpen, setDocumentMenuOpen] = useState<string | null>(null);
+  const [menuPosition, setMenuPosition] = useState({ x: 0, y: 0 });
+  const menuButtonRefs = useRef<{ [key: string]: HTMLButtonElement | null }>(
+    {}
+  );
 
   // 새 문서 생성 함수
   const createNewDocument = async () => {
@@ -158,6 +163,46 @@ export default function DashboardPage() {
     }
   };
 
+  // 드롭다운 메뉴 열기 및 위치 계산
+  const handleMenuOpen = (documentId: string, event: React.MouseEvent) => {
+    event.stopPropagation();
+
+    if (documentMenuOpen === documentId) {
+      setDocumentMenuOpen(null);
+      return;
+    }
+
+    const button = menuButtonRefs.current[documentId];
+    if (button) {
+      const rect = button.getBoundingClientRect();
+      const menuWidth = 160;
+      const menuHeight = 96; // 대략적인 메뉴 높이
+
+      // 화면 경계를 고려한 위치 계산
+      let x = rect.right - menuWidth;
+      let y = rect.bottom + 8;
+
+      // 오른쪽 경계 체크
+      if (x < 8) {
+        x = 8;
+      }
+
+      // 왼쪽 경계 체크
+      if (x + menuWidth > window.innerWidth - 8) {
+        x = window.innerWidth - menuWidth - 8;
+      }
+
+      // 아래쪽 경계 체크
+      if (y + menuHeight > window.innerHeight - 8) {
+        y = rect.top - menuHeight - 8;
+      }
+
+      setMenuPosition({ x, y });
+    }
+
+    setDocumentMenuOpen(documentId);
+  };
+
   useEffect(() => {
     if (!loading && !user) {
       router.push("/auth");
@@ -177,7 +222,11 @@ export default function DashboardPage() {
       if (!target.closest("[data-profile-dropdown]")) {
         setIsProfileDropdownOpen(false);
       }
-      if (!target.closest("[data-document-menu]")) {
+      // 드롭다운 메뉴나 메뉴 버튼을 클릭하지 않았을 때만 닫기
+      if (
+        !target.closest("[data-document-menu]") &&
+        !target.closest(".fixed")
+      ) {
         setDocumentMenuOpen(null);
       }
     };
@@ -194,13 +243,71 @@ export default function DashboardPage() {
       }
     };
 
+    const handleScroll = () => {
+      if (documentMenuOpen) {
+        setDocumentMenuOpen(null);
+      }
+    };
+
     document.addEventListener("mousedown", handleClickOutside);
     document.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("scroll", handleScroll, true);
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
       document.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("scroll", handleScroll, true);
     };
   }, [editingDocumentId]);
+
+  // 드롭다운 메뉴 컴포넌트
+  const DropdownMenu = ({
+    documentId,
+    doc,
+  }: {
+    documentId: string;
+    doc: Document;
+  }) => {
+    if (documentMenuOpen !== documentId || typeof window === "undefined")
+      return null;
+
+    return createPortal(
+      <AnimatePresence>
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95, y: -10 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.95, y: -10 }}
+          transition={{ duration: 0.15 }}
+          className="fixed w-40 bg-white/95 backdrop-blur-xl border border-gray-200/50 rounded-xl shadow-xl z-[99999]"
+          style={{
+            left: menuPosition.x,
+            top: menuPosition.y,
+          }}
+        >
+          <button
+            className="w-full flex items-center space-x-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50/80 transition-colors rounded-t-xl"
+            onClick={(e) => {
+              e.stopPropagation();
+              startEditingTitle(doc);
+            }}
+          >
+            <PencilIcon className="h-4 w-4" />
+            <span>제목 수정</span>
+          </button>
+          <button
+            className="w-full flex items-center space-x-3 px-4 py-3 text-sm text-red-600 hover:bg-red-50/80 transition-colors rounded-b-xl"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleDeleteDocument(doc.id);
+            }}
+          >
+            <TrashIcon className="h-4 w-4" />
+            <span>삭제</span>
+          </button>
+        </motion.div>
+      </AnimatePresence>,
+      document.body
+    );
+  };
 
   if (loading)
     return (
@@ -515,9 +622,9 @@ export default function DashboardPage() {
                       )}
 
                       <div className="flex items-center space-x-4 mt-1">
-                        <p className="text-xs text-gray-500 truncate max-w-md">
+                        <p className="text-xs text-gray-500 truncate max-w-md hidden md:block">
                           {stripHtmlAndMarkdown(doc.content) ||
-                            "내용이 없습니다."}
+                            ""}
                         </p>
                         <div className="flex items-center text-xs text-gray-400">
                           <ClockIcon className="h-3 w-3 mr-1" />
@@ -530,50 +637,17 @@ export default function DashboardPage() {
                   {/* More Options Button */}
                   <div className="relative" data-document-menu>
                     <button
-                      className="opacity-0 group-hover:opacity-100 p-2 rounded-lg hover:bg-gray-100/80 transition-all duration-200"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setDocumentMenuOpen(
-                          documentMenuOpen === doc.id ? null : doc.id
-                        );
+                      ref={(el) => {
+                        menuButtonRefs.current[doc.id] = el;
                       }}
+                      className="opacity-0 group-hover:opacity-100 p-2 rounded-lg hover:bg-gray-100/80 transition-all duration-200"
+                      onClick={(e) => handleMenuOpen(doc.id, e)}
                     >
                       <EllipsisVerticalIcon className="h-4 w-4 text-gray-500" />
                     </button>
 
-                    {/* Dropdown Menu */}
-                    <AnimatePresence>
-                      {documentMenuOpen === doc.id && (
-                        <motion.div
-                          initial={{ opacity: 0, scale: 0.95, y: -10 }}
-                          animate={{ opacity: 1, scale: 1, y: 0 }}
-                          exit={{ opacity: 0, scale: 0.95, y: -10 }}
-                          transition={{ duration: 0.15 }}
-                          className="absolute right-0 top-full mt-2 w-40 bg-white/90 backdrop-blur-xl border border-gray-200/50 rounded-xl shadow-xl z-[9999]"
-                        >
-                          <button
-                            className="w-full flex items-center space-x-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50/80 transition-colors rounded-t-xl"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              startEditingTitle(doc);
-                            }}
-                          >
-                            <PencilIcon className="h-4 w-4" />
-                            <span>제목 수정</span>
-                          </button>
-                          <button
-                            className="w-full flex items-center space-x-3 px-4 py-3 text-sm text-red-600 hover:bg-red-50/80 transition-colors rounded-b-xl"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDeleteDocument(doc.id);
-                            }}
-                          >
-                            <TrashIcon className="h-4 w-4" />
-                            <span>삭제</span>
-                          </button>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
+                    {/* Dropdown Menu - 새로운 포탈 기반 컴포넌트 */}
+                    <DropdownMenu documentId={doc.id} doc={doc} />
                   </div>
                 </motion.div>
               ))}
