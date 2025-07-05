@@ -1,10 +1,10 @@
 import { NextRequest } from "next/server";
 import {
-  getOrchestrationAI,
-  OrchestrationMessage,
-  OrchestrationResult,
+  getAgentAI,
+  AgentMessage,
+  AgentResult,
   ToolStatusMessage,
-} from "@/lib/orchestration-ai";
+} from "@/lib/agent";
 
 // 요청 바디 타입 정의
 interface RequestBody {
@@ -44,29 +44,27 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 메시지가 OrchestrationMessage 타입인지 확인하는 타입 가드 함수
-    const isValidMessage = (msg: unknown): msg is OrchestrationMessage => {
+    // 메시지가 AgentMessage 타입인지 확인하는 타입 가드 함수
+    const isValidMessage = (msg: unknown): msg is AgentMessage => {
       return (
         msg !== null &&
         typeof msg === "object" &&
         "role" in msg &&
         "content" in msg &&
-        ["user", "assistant"].includes((msg as OrchestrationMessage).role) &&
-        typeof (msg as OrchestrationMessage).content === "string" &&
-        (msg as OrchestrationMessage).content.trim().length > 0
+        ["user", "assistant"].includes((msg as AgentMessage).role) &&
+        typeof (msg as AgentMessage).content === "string" &&
+        (msg as AgentMessage).content.trim().length > 0
       );
     };
 
     // 대화 히스토리 검증 및 변환
-    const validHistory: OrchestrationMessage[] = Array.isArray(
-      conversationHistory
-    )
+    const validHistory: AgentMessage[] = Array.isArray(conversationHistory)
       ? conversationHistory.filter(isValidMessage).slice(-10) // 최근 10개만 사용
       : [];
 
-    // 오케스트레이션 AI 서비스 호출
-    const orchestrationAI = await getOrchestrationAI();
-    const stream = orchestrationAI.orchestrateStream(
+    // 에이전트 AI 서비스 호출
+    const agentAI = await getAgentAI();
+    const stream = agentAI.agentStream(
       message,
       documentId,
       userId,
@@ -77,7 +75,7 @@ export async function POST(request: NextRequest) {
     const readableStream = new ReadableStream({
       async start(controller) {
         try {
-          let finalResult: OrchestrationResult | null = null;
+          let finalResult: AgentResult | null = null;
 
           for await (const chunk of stream) {
             if (typeof chunk === "string") {
@@ -105,14 +103,14 @@ export async function POST(request: NextRequest) {
               chunk !== null &&
               !("type" in chunk)
             ) {
-              // 최종 결과 저장 (OrchestrationResult)
-              finalResult = chunk as OrchestrationResult;
+              // 최종 결과 저장 (AgentResult)
+              finalResult = chunk as AgentResult;
             }
           }
 
           // 최종 결과가 있으면 전송
           if (finalResult) {
-            const result = finalResult as OrchestrationResult;
+            const result = finalResult as AgentResult;
             const data = `data: ${JSON.stringify({
               result: {
                 toolsUsed: result.toolsUsed,
@@ -127,7 +125,7 @@ export async function POST(request: NextRequest) {
           controller.enqueue(new TextEncoder().encode("data: [DONE]\n\n"));
           controller.close();
         } catch (error) {
-          console.error("Orchestration Stream Error:", error);
+          console.error("Agent Stream Error:", error);
           const errorData = `data: ${JSON.stringify({
             error: "AI 처리 중 오류가 발생했습니다.",
           })}\n\n`;

@@ -32,7 +32,7 @@ interface Message {
     status: "starting" | "in_progress" | "completed" | "failed";
     message: string;
   }[];
-  orchestrationResult?: {
+  agentResult?: {
     toolsUsed: Array<{
       toolName: string;
       success: boolean;
@@ -317,15 +317,15 @@ export function AiSidebar({ className, documentId }: AiSidebarProps) {
 
               // 오케스트레이션 결과 처리 (final: true인 경우)
               if (parsed.final && parsed.result) {
-                console.log("오케스트레이션 결과:", parsed.result);
+                console.log("에이전트 결과:", parsed.result);
 
-                // 메시지에 오케스트레이션 결과 추가
+                // 메시지에 에이전트 결과 추가
                 setMessages((prev) =>
                   prev.map((msg) =>
                     msg.id === loadingMessage.id
                       ? {
                           ...msg,
-                          orchestrationResult: {
+                          agentResult: {
                             toolsUsed: parsed.result.toolsUsed || [],
                             reasoning: parsed.result.reasoning || "",
                           },

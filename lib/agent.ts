@@ -1,8 +1,8 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { executeAgentTool, ToolResult } from "./agent-tool";
 
-// 오케스트레이션 AI 메시지 타입
-export interface OrchestrationMessage {
+// 에이전트 AI 메시지 타입
+export interface AgentMessage {
   role: "user" | "assistant";
   content: string;
 }
@@ -23,8 +23,8 @@ export interface ToolCallResult {
   error?: string;
 }
 
-// 오케스트레이션 결과 타입
-export interface OrchestrationResult {
+// 에이전트 결과 타입
+export interface AgentResult {
   response: string;
   toolsUsed: ToolCallResult[];
   reasoning: string;
@@ -39,7 +39,7 @@ export interface ToolStatusMessage {
 }
 
 // 의도 판단을 위한 시스템 프롬프트
-const INTENT_ANALYSIS_PROMPT = `You are a hyper-intelligent intent analyzer for a document writing assistan.
+const INTENT_ANALYSIS_PROMPT = `You are a hyper-intelligent intent analyzer for a document writing assistant.
 
 CORE MISSION: Analyze user intent with surgical precision and determine optimal tool execution strategy.
 
@@ -148,7 +148,7 @@ CONTEXT AWARENESS:
 
 Your goal: Be the most helpful, intelligent, and efficient writing assistant the user has ever experienced.`;
 
-class OrchestrationAI {
+class AgentAI {
   private anthropic: Anthropic;
 
   constructor() {
@@ -166,7 +166,7 @@ class OrchestrationAI {
    */
   private async analyzeIntent(
     message: string,
-    conversationHistory: OrchestrationMessage[] = []
+    conversationHistory: AgentMessage[] = []
   ): Promise<IntentAnalysisResult> {
     try {
       const messages: Anthropic.Messages.MessageParam[] = [
@@ -255,6 +255,56 @@ class OrchestrationAI {
   }
 
   /**
+   * 단일 도구를 실행합니다
+   */
+  private async executeSingleTool(
+    toolName: string,
+    documentId: string,
+    userId: string,
+    originalMessage: string
+  ): Promise<ToolCallResult> {
+    try {
+      let result: ToolResult;
+
+      switch (toolName) {
+        case "read_document":
+          result = await executeAgentTool("read_document", {
+            documentId,
+            userId,
+          });
+          break;
+
+        case "update_document":
+          result = await executeAgentTool("update_document", {
+            documentId,
+            userId,
+            userRequest: originalMessage,
+          });
+          break;
+
+        default:
+          result = {
+            success: false,
+            error: `Unknown tool: ${toolName}`,
+          };
+      }
+
+      return {
+        toolName,
+        success: result.success,
+        data: result.data,
+        error: result.error,
+      };
+    } catch (error) {
+      return {
+        toolName,
+        success: false,
+        error: error instanceof Error ? error.message : "Tool execution failed",
+      };
+    }
+  }
+
+  /**
    * 필요한 도구들을 실행합니다 (상태 스트리밍 지원)
    */
   private async *executeToolsWithStatus(
@@ -272,128 +322,41 @@ class OrchestrationAI {
     if (hasReadDocument && hasOtherTools) {
       // 순차 처리: read_document 먼저, 나머지는 병렬
       for (const toolName of toolsToUse) {
-        try {
-          // 도구 시작 상태 전송
-          yield {
-            type: "tool_status",
+        // 도구 시작 상태 전송
+        yield {
+          type: "tool_status",
+          toolName,
+          status: "starting",
+          message: this.getToolStatusMessage(toolName, "starting"),
+        };
+
+        const result = await this.executeSingleTool(
+          toolName,
+          documentId,
+          userId,
+          originalMessage
+        );
+
+        results.push(result);
+
+        // 도구 완료 상태 전송
+        yield {
+          type: "tool_status",
+          toolName,
+          status: result.success ? "completed" : "failed",
+          message: this.getToolStatusMessage(
             toolName,
-            status: "starting",
-            message: this.getToolStatusMessage(toolName, "starting"),
-          };
+            result.success ? "completed" : "failed"
+          ),
+        };
 
-          let result: ToolResult;
-
-          switch (toolName) {
-            case "read_document":
-              result = await executeAgentTool("read_document", {
-                documentId,
-                userId,
-              });
-              break;
-
-            case "update_document":
-              result = await executeAgentTool("update_document", {
-                documentId,
-                userId,
-                userRequest: originalMessage,
-              });
-              break;
-
-            default:
-              result = {
-                success: false,
-                error: `Unknown tool: ${toolName}`,
-              };
-          }
-
-          const toolResult = {
-            toolName,
-            success: result.success,
-            data: result.data,
-            error: result.error,
-          };
-
-          results.push(toolResult);
-
-          // 도구 완료 상태 전송
-          yield {
-            type: "tool_status",
-            toolName,
-            status: result.success ? "completed" : "failed",
-            message: this.getToolStatusMessage(
-              toolName,
-              result.success ? "completed" : "failed"
-            ),
-          };
-
-          // 중요한 도구가 실패하면 후속 도구 실행 중단
-          if (!result.success && toolName === "read_document") {
-            break;
-          }
-        } catch (error) {
-          const toolResult = {
-            toolName,
-            success: false,
-            error:
-              error instanceof Error ? error.message : "Tool execution failed",
-          };
-
-          results.push(toolResult);
-
-          // 도구 실패 상태 전송
-          yield {
-            type: "tool_status",
-            toolName,
-            status: "failed",
-            message: this.getToolStatusMessage(toolName, "failed"),
-          };
+        // 중요한 도구가 실패하면 후속 도구 실행 중단
+        if (!result.success && toolName === "read_document") {
+          break;
         }
       }
     } else {
       // 병렬 처리 가능한 경우
-      const toolPromises = toolsToUse.map(async (toolName) => {
-        try {
-          let result: ToolResult;
-
-          switch (toolName) {
-            case "read_document":
-              result = await executeAgentTool("read_document", {
-                documentId,
-                userId,
-              });
-              break;
-
-            case "update_document":
-              result = await executeAgentTool("update_document", {
-                documentId,
-                userId,
-                userRequest: originalMessage,
-              });
-              break;
-
-            default:
-              result = {
-                success: false,
-                error: `Unknown tool: ${toolName}`,
-              };
-          }
-
-          return {
-            toolName,
-            success: result.success,
-            data: result.data,
-            error: result.error,
-          };
-        } catch (error) {
-          return {
-            toolName,
-            success: false,
-            error:
-              error instanceof Error ? error.message : "Tool execution failed",
-          };
-        }
-      });
-
       // 병렬 도구들의 시작 상태 전송
       for (const toolName of toolsToUse) {
         yield {
@@ -403,6 +366,10 @@ class OrchestrationAI {
           message: this.getToolStatusMessage(toolName, "starting"),
         };
       }
+
+      const toolPromises = toolsToUse.map((toolName) =>
+        this.executeSingleTool(toolName, documentId, userId, originalMessage)
+      );
 
       const parallelResults = await Promise.all(toolPromises);
       results.push(...parallelResults);
@@ -432,7 +399,7 @@ class OrchestrationAI {
     originalMessage: string,
     intentAnalysis: IntentAnalysisResult,
     toolResults: ToolCallResult[],
-    conversationHistory: OrchestrationMessage[] = []
+    conversationHistory: AgentMessage[] = []
   ): AsyncGenerator<string, void, unknown> {
     try {
       // 도구가 사용되지 않은 경우 직접 응답 반환
@@ -540,14 +507,14 @@ class OrchestrationAI {
   }
 
   /**
-   * 스트리밍 오케스트레이션 처리 (도구 상태 표시 포함)
+   * 스트리밍 에이전트 처리 (도구 상태 표시 포함)
    */
-  async *orchestrateStream(
+  async *agentStream(
     message: string,
     documentId: string,
     userId: string,
-    conversationHistory: OrchestrationMessage[] = []
-  ): AsyncGenerator<string | ToolStatusMessage, OrchestrationResult, unknown> {
+    conversationHistory: AgentMessage[] = []
+  ): AsyncGenerator<string | ToolStatusMessage, AgentResult, unknown> {
     try {
       // 1. 의도 분석 (사용자에게 숨김)
       const intentAnalysis = await this.analyzeIntent(
@@ -597,14 +564,14 @@ class OrchestrationAI {
         reasoning: intentAnalysis.reasoning,
       };
     } catch (error) {
-      console.error("Orchestration error:", error);
+      console.error("Agent error:", error);
       const errorMessage = "처리 중 오류가 발생했습니다. 다시 시도해 주세요.";
       yield errorMessage;
 
       return {
         response: errorMessage,
         toolsUsed: [],
-        reasoning: "오케스트레이션 오류",
+        reasoning: "에이전트 오류",
       };
     }
   }
@@ -612,12 +579,12 @@ class OrchestrationAI {
   /**
    * 단순 응답 (스트리밍 없이)
    */
-  async orchestrate(
+  async execute(
     message: string,
     documentId: string,
     userId: string,
-    conversationHistory: OrchestrationMessage[] = []
-  ): Promise<OrchestrationResult> {
+    conversationHistory: AgentMessage[] = []
+  ): Promise<AgentResult> {
     try {
       // 1. 의도 분석
       const intentAnalysis = await this.analyzeIntent(
@@ -663,24 +630,24 @@ class OrchestrationAI {
         reasoning: intentAnalysis.reasoning,
       };
     } catch (error) {
-      console.error("Orchestration error:", error);
+      console.error("Agent error:", error);
       return {
         response: "처리 중 오류가 발생했습니다. 다시 시도해 주세요.",
         toolsUsed: [],
-        reasoning: "오케스트레이션 오류",
+        reasoning: "에이전트 오류",
       };
     }
   }
 }
 
 // 싱글톤 인스턴스
-let orchestrationAIInstance: OrchestrationAI | null = null;
+let agentAIInstance: AgentAI | null = null;
 
-export async function getOrchestrationAI(): Promise<OrchestrationAI> {
-  if (!orchestrationAIInstance) {
-    orchestrationAIInstance = new OrchestrationAI();
+export async function getAgentAI(): Promise<AgentAI> {
+  if (!agentAIInstance) {
+    agentAIInstance = new AgentAI();
   }
-  return orchestrationAIInstance;
+  return agentAIInstance;
 }
 
-export default OrchestrationAI;
+export default AgentAI;
