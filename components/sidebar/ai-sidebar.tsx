@@ -300,14 +300,29 @@ export function AiSidebar({ className, documentId }: AiSidebarProps) {
                     msg.id === loadingMessage.id
                       ? {
                           ...msg,
-                          toolStatus: [
-                            ...(msg.toolStatus || []),
-                            {
+                          toolStatus: (() => {
+                            const currentStatus = msg.toolStatus || [];
+                            const newStatus = {
                               toolName: parsed.toolStatus.toolName,
                               status: parsed.toolStatus.status,
                               message: parsed.toolStatus.message,
-                            },
-                          ],
+                            };
+
+                            // 같은 도구의 이전 상태를 찾아서 업데이트하거나 새로 추가
+                            const existingIndex = currentStatus.findIndex(
+                              (s) => s.toolName === newStatus.toolName
+                            );
+
+                            if (existingIndex >= 0) {
+                              // 기존 상태 업데이트
+                              const updated = [...currentStatus];
+                              updated[existingIndex] = newStatus;
+                              return updated;
+                            } else {
+                              // 새 상태 추가
+                              return [...currentStatus, newStatus];
+                            }
+                          })(),
                           isStreaming: true,
                         }
                       : msg
@@ -718,23 +733,34 @@ export function AiSidebar({ className, documentId }: AiSidebarProps) {
                                     <div
                                       key={index}
                                       className={cn(
-                                        "flex items-center gap-2 px-3 py-2 rounded-lg text-xs",
-                                        "bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100",
-                                        "text-blue-800"
+                                        "flex items-center gap-3 px-3 py-2 rounded-lg text-xs border transition-all duration-200",
+                                        status.status === "starting" &&
+                                          "bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200 text-blue-800",
+                                        status.status === "in_progress" &&
+                                          "bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200 text-blue-800",
+                                        status.status === "completed" &&
+                                          "bg-gradient-to-r from-green-50 to-emerald-50 border-green-200 text-green-800",
+                                        status.status === "failed" &&
+                                          "bg-gradient-to-r from-red-50 to-rose-50 border-red-200 text-red-800"
                                       )}
                                     >
                                       <div className="flex items-center gap-2">
-                                        {status.status === "starting" && (
-                                          <div className="w-2 h-2 border border-black border-t-transparent rounded-full animate-spin" />
-                                        )}
-                                        {status.status === "in_progress" && (
-                                          <div className="w-2 h-2 border border-black border-t-transparent rounded-full animate-spin" />
+                                        {(status.status === "starting" ||
+                                          status.status === "in_progress") && (
+                                          <div
+                                            className={cn(
+                                              "w-2 h-2 border-2 border-t-transparent rounded-full animate-spin",
+                                              status.status === "starting"
+                                                ? "border-blue-500"
+                                                : "border-blue-600"
+                                            )}
+                                          />
                                         )}
                                         {status.status === "completed" && (
-                                          <div className="w-2 h-2 bg-black rounded-full" />
+                                          <div className="w-2 h-2 bg-green-500 rounded-full" />
                                         )}
                                         {status.status === "failed" && (
-                                          <div className="w-2 h-2 bg-black rounded-full" />
+                                          <div className="w-2 h-2 bg-red-500 rounded-full" />
                                         )}
                                         <span className="font-medium">
                                           {status.message}

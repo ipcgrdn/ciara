@@ -193,41 +193,48 @@
     }
   }
 
-  /* Heading styles */
-  h1,
-  h2,
-  h3,
-  h4,
-  h5,
-  h6 {
-    line-height: 1.1;
-    margin-top: 2.5rem;
-    text-wrap: pretty;
-  }
+/* Heading styles */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  line-height: 1.1;
+  text-wrap: pretty;
+}
 
-  h1,
-  h2 {
-    margin-top: 3.5rem;
-    margin-bottom: 1.5rem;
-  }
+h1,
+h2 {
+  margin-top: 1.5rem; /* 위쪽 여백 더 줄임 */
+  margin-bottom: 0.3rem; /* 아래쪽 여백 더 줄임 */
+}
 
-  h1 {
-    font-size: 1.4rem;
-  }
+h3,
+h4,
+h5,
+h6 {
+  margin-top: 1rem;
+  margin-bottom: 0.2rem;
+}
 
-  h2 {
-    font-size: 1.2rem;
-  }
+h1 {
+  font-size: 1.4rem;
+}
 
-  h3 {
-    font-size: 1.1rem;
-  }
+h2 {
+  font-size: 1.2rem;
+}
 
-  h4,
-  h5,
-  h6 {
-    font-size: 1rem;
-  }
+h3 {
+  font-size: 1.1rem;
+}
+
+h4,
+h5,
+h6 {
+  font-size: 1rem;
+}
 
   /* Table-specific styling */
   table {

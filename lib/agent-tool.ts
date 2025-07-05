@@ -1,7 +1,10 @@
-import { Document, UpdateDocumentData } from "./documents";
-import { DocumentIndex } from "./index";
 import ServerSupabase from "./server-supabase";
 import Anthropic from "@anthropic-ai/sdk";
+import {
+  getDocumentContent,
+  updateDocumentContent,
+  createAIUserId,
+} from "./liveblocks-utils";
 
 // 도구 결과 타입 정의
 export interface ToolResult<T = unknown> {
@@ -10,20 +13,29 @@ export interface ToolResult<T = unknown> {
   error?: string;
 }
 
-// 문서 읽기 결과 타입
+// 문서 읽기 결과 타입 (Liveblocks 기반)
 export interface DocumentReadResult {
-  document: Document;
-  index: DocumentIndex | null;
+  content: string;
+  metadata: {
+    documentId: string;
+    aiUserId: string;
+    readAt: string;
+  };
 }
 
-// 문서 업데이트 결과 타입
+// 문서 업데이트 결과 타입 (Liveblocks 기반)
 export interface DocumentUpdateResult {
-  document: Document;
-  updatedFields: string[];
+  content: string;
+  metadata: {
+    documentId: string;
+    aiUserId: string;
+    updatedAt: string;
+    changes: string[];
+  };
 }
 
 /**
- * 문서 소유권 검증
+ * 문서 소유권 검증 (기존 데이터베이스 기반)
  * @param documentId - 검증할 문서 ID
  * @param userId - 검증할 사용자 ID
  * @returns 소유권 여부
@@ -40,22 +52,23 @@ async function verifyDocumentOwnership(
       .single();
 
     if (error) {
-      console.error("Error verifying document ownership:", error);
       return false;
     }
 
-    return !!data;
+    const isOwner = !!data;
+
+    return isOwner;
   } catch (error) {
-    console.error("Error in verifyDocumentOwnership:", error);
     return false;
   }
 }
 
 /**
- * 에이전트 도구: 현재 작성된 문서 읽기
- * @param documentId - 읽을 문서의 ID
+ * 에이전트 도구: Liveblocks를 통한 문서 읽기
+ * AI가 협업자로 참여하여 실시간 문서 내용을 읽어옴
+ * @param documentId - 읽을 문서의 ID (Room ID와 동일)
  * @param userId - 요청하는 사용자의 ID
- * @returns 문서 내용과 목차 정보
+ * @returns 실시간 문서 내용
  */
 export async function readDocument(
   documentId: string,
@@ -79,6 +92,7 @@ export async function readDocument(
 
     // 문서 소유권 검증
     const isOwner = await verifyDocumentOwnership(documentId, userId);
+
     if (!isOwner) {
       return {
         success: false,
@@ -86,36 +100,37 @@ export async function readDocument(
       };
     }
 
-    // Service Role로 문서 조회
-    const { data: document, error: docError } = await ServerSupabase.from(
-      "documents"
-    )
-      .select("*")
-      .eq("id", documentId)
-      .single();
+    // AI 사용자 ID 생성
+    const aiUserId = createAIUserId(documentId);
 
-    if (docError || !document) {
+    try {
+      // Liveblocks Y.js 문서에서 실시간 내용 읽기
+      const content = await getDocumentContent(documentId);
+
+      const result = {
+        success: true,
+        data: {
+          content,
+          metadata: {
+            documentId,
+            aiUserId,
+            readAt: new Date().toISOString(),
+          },
+        },
+      };
+
+      return result;
+    } catch (liveblocksError) {
       return {
         success: false,
-        error: `문서를 찾을 수 없습니다. (ID: ${documentId})`,
+        error: `실시간 문서를 읽을 수 없습니다: ${
+          liveblocksError instanceof Error
+            ? liveblocksError.message
+            : "알 수 없는 오류"
+        }`,
       };
     }
-
-    // Service Role로 목차 조회
-    const { data: index } = await ServerSupabase.from("index")
-      .select("*")
-      .eq("document_id", documentId)
-      .single();
-
-    return {
-      success: true,
-      data: {
-        document,
-        index: index || null,
-      },
-    };
   } catch (error) {
-    console.error("Error in readDocument tool:", error);
     return {
       success: false,
       error: `문서 읽기 중 오류가 발생했습니다: ${
@@ -126,17 +141,18 @@ export async function readDocument(
 }
 
 /**
- * 에이전트 도구: 현재 작성된 문서 수정 (AI 지능형 수정 지원)
- * @param documentId - 수정할 문서의 ID
+ * 에이전트 도구: Liveblocks를 통한 문서 수정
+ * AI가 협업자로 참여하여 실시간으로 문서를 수정함
+ * @param documentId - 수정할 문서의 ID (Room ID와 동일)
  * @param userId - 요청하는 사용자의 ID
- * @param updates - 업데이트할 데이터 (title, content) - 선택사항
+ * @param updates - 업데이트할 데이터 (content만 지원) - 선택사항
  * @param userRequest - 사용자의 수정 요청 (AI가 자동으로 수정할 때 사용) - 선택사항
  * @returns 업데이트된 문서 정보
  */
 export async function updateDocumentTool(
   documentId: string,
   userId: string,
-  updates?: UpdateDocumentData,
+  updates?: { content?: string },
   userRequest?: string
 ): Promise<ToolResult<DocumentUpdateResult>> {
   try {
@@ -156,15 +172,16 @@ export async function updateDocumentTool(
     }
 
     // updates와 userRequest 중 하나는 있어야 함
-    if (!updates && !userRequest) {
+    if (!updates?.content && !userRequest) {
       return {
         success: false,
-        error: "업데이트할 데이터 또는 사용자 요청이 필요합니다.",
+        error: "업데이트할 내용 또는 사용자 요청이 필요합니다.",
       };
     }
 
     // 문서 소유권 검증
     const isOwner = await verifyDocumentOwnership(documentId, userId);
+
     if (!isOwner) {
       return {
         success: false,
@@ -172,80 +189,63 @@ export async function updateDocumentTool(
       };
     }
 
-    let finalUpdates: UpdateDocumentData = {};
+    // AI 사용자 ID 생성
+    const aiUserId = createAIUserId(documentId);
 
-    // userRequest가 있으면 AI로 지능적 수정
-    if (userRequest && typeof userRequest === "string") {
-      // 현재 문서 내용 읽기
-      const { data: document, error: docError } = await ServerSupabase.from(
-        "documents"
-      )
-        .select("*")
-        .eq("id", documentId)
-        .single();
+    let finalContent: string;
+    let changes: string[] = [];
 
-      if (docError || !document) {
-        return {
-          success: false,
-          error: `문서를 찾을 수 없습니다. (ID: ${documentId})`,
-        };
-      }
+    try {
+      // userRequest가 있으면 AI로 지능적 수정
+      if (userRequest && typeof userRequest === "string") {
+        // 현재 Liveblocks 문서 내용 읽기
+        const currentContent = await getDocumentContent(documentId);
 
-      // AI로 수정 내용 생성
-      if (!process.env.ANTHROPIC_API_KEY) {
-        return {
-          success: false,
-          error: "AI 서비스가 설정되지 않았습니다.",
-        };
-      }
+        // AI로 수정 내용 생성
+        if (!process.env.ANTHROPIC_API_KEY) {
+          return {
+            success: false,
+            error: "AI 서비스가 설정되지 않았습니다.",
+          };
+        }
 
-      const anthropic = new Anthropic({
-        apiKey: process.env.ANTHROPIC_API_KEY,
-      });
+        const anthropic = new Anthropic({
+          apiKey: process.env.ANTHROPIC_API_KEY,
+        });
 
-      const systemPrompt = `You are an elite document editing AI with human-level intelligence and precision.
+        const systemPrompt = `You are an elite document editing AI.
 
-CORE MISSION: Transform user requests into optimal document modifications with surgical precision and intelligent reasoning.
+CORE MISSION: Transform user requests into optimal document modifications with surgical precision.
 
-CRITICAL: Respond ONLY with valid JSON. NO markdown blocks, NO extra formatting, NO explanations outside JSON, NO emojis.
+CRITICAL: Respond ONLY with valid JSON. NO extra formatting, NO explanations outside JSON.
 
 ANALYSIS FRAMEWORK:
-1. UNDERSTAND USER INTENT: Decode what the user truly wants beyond surface-level requests
-2. EVALUATE CURRENT CONTENT: Assess document quality, style, structure, and improvement potential  
-3. DETERMINE OPTIMAL CHANGES: Make intelligent decisions about what to modify, preserve, or enhance
-4. EXECUTE WITH PRECISION: Apply changes that align with user intent while improving overall quality
+1. UNDERSTAND USER INTENT: Decode what the user truly wants
+2. EVALUATE CURRENT CONTENT: Assess document quality and improvement potential  
+3. DETERMINE OPTIMAL CHANGES: Make intelligent decisions about modifications
+4. EXECUTE WITH PRECISION: Apply changes that improve overall quality
 
 MODIFICATION STRATEGIES:
-
-TITLE IMPROVEMENTS:
-- Make titles more engaging and descriptive
-- Ensure clarity and reader appeal
-- Maintain topic relevance
-- Consider readability
-
-CONTENT ENHANCEMENTS:
 - Improve flow and readability
 - Enhance tone and style consistency
 - Add compelling details where needed
 - Fix grammar and structural issues
 - Preserve core message and intent
-- Make content more engaging/interesting
+- Make content more engaging
 - Optimize for target audience
 
-SMART DECISION MAKING:
-- If user says "make it better" → analyze weakness and improve comprehensively
-- If user requests specific changes → focus on that area while maintaining coherence
-- If content is already good → make subtle refinements or suggest no changes
-- If content needs major work → implement significant improvements
+CRITICAL FORMATTING RULES:
+- Use plain text with proper line breaks (\\n) between paragraphs
+- Each paragraph should be separated by a single newline character
+- Preserve natural paragraph breaks for readability
+- Ensure content flows naturally when displayed in the editor
 
 RESPONSE SCHEMA:
 {
   "shouldUpdate": boolean,
-  "updates": {
-    "title": "new title text (optional)",
-    "content": "new content text (optional)"
-  },
-  "reasoning": "Concise explanation of changes and rationale"
+  "content": "new complete content",
+  "changes": ["list of changes made"],
+  "reasoning": "Concise explanation of changes"
 }
 
 QUALITY STANDARDS:
@@ -253,157 +253,130 @@ QUALITY STANDARDS:
 - Preserve user's voice and intent
 - Maintain factual accuracy
 - Ensure changes are contextually appropriate
-- Never make unnecessary modifications
+- Consider real-time collaboration context
+- Use markdown formatting to enhance readability and structure
+- Choose appropriate formatting that matches content hierarchy and importance`;
 
-EXECUTION PRINCIPLES:
-- Be decisive and confident in modifications
-- Focus on high-impact improvements
-- Consider document purpose and audience
-- Maintain professional quality standards
-- Enhance user satisfaction through better content
+        const userMessage = `DOCUMENT EDITING REQUEST
 
-Think like the world's best editor: precise, intelligent, and focused on creating exceptional content.`;
-
-      const userMessage = `DOCUMENT ANALYSIS REQUEST
-
-Current Document:
-Title: ${document.title || "[No title]"}
-Content: ${document.content || "[No content]"}
+Current Document Content:
+${currentContent || "[Empty document]"}
 
 User Request: "${userRequest}"
 
-TASK: Analyze this document and user request, then determine optimal modifications. Focus on understanding the user's true intent and delivering improvements that exceed expectations.
+TASK: Analyze the content and user request, then determine optimal modifications for real-time collaborative editing.`;
 
-Respond with JSON only - no additional text or formatting.`;
-
-      try {
-        const response = await anthropic.messages.create({
-          model: "claude-sonnet-4-20250514",
-          max_tokens: 4096,
-          system: systemPrompt,
-          messages: [
-            {
-              role: "user",
-              content: userMessage,
-            },
-          ],
-          temperature: 0.3,
-        });
-
-        const responseText =
-          response.content[0].type === "text" ? response.content[0].text : "";
-
-        let aiDecision;
         try {
-          // JSON 파싱 시도
-          let jsonText = responseText.trim();
+          const response = await anthropic.messages.create({
+            model: "claude-sonnet-4-20250514",
+            max_tokens: 4096,
+            system: systemPrompt,
+            messages: [
+              {
+                role: "user",
+                content: userMessage,
+              },
+            ],
+            temperature: 0.3,
+          });
 
-          // 마크다운 코드 블록 제거
-          if (jsonText.startsWith("```json")) {
-            jsonText = jsonText
-              .replace(/^```json\s*/, "")
-              .replace(/\s*```$/, "");
-          } else if (jsonText.startsWith("```")) {
-            jsonText = jsonText.replace(/^```\s*/, "").replace(/\s*```$/, "");
+          const responseText =
+            response.content[0].type === "text" ? response.content[0].text : "";
+
+          let aiDecision;
+          try {
+            // JSON 파싱 시도
+            let jsonText = responseText.trim();
+
+            // 마크다운 코드 블록 제거
+            if (jsonText.startsWith("```json")) {
+              jsonText = jsonText
+                .replace(/^```json\s*/, "")
+                .replace(/\s*```$/, "");
+            } else if (jsonText.startsWith("```")) {
+              jsonText = jsonText.replace(/^```\s*/, "").replace(/\s*```$/, "");
+            }
+
+            aiDecision = JSON.parse(jsonText);
+          } catch (parseError) {
+            return {
+              success: false,
+              error: "AI 응답을 분석할 수 없습니다.",
+            };
           }
 
-          aiDecision = JSON.parse(jsonText);
-        } catch (parseError) {
-          console.error("AI response parsing error:", parseError);
-          console.error("Raw AI response:", responseText);
+          // AI가 수정이 불필요하다고 판단한 경우
+          if (!aiDecision.shouldUpdate) {
+            const result = {
+              success: true,
+              data: {
+                content: currentContent,
+                metadata: {
+                  documentId,
+                  aiUserId,
+                  updatedAt: new Date().toISOString(),
+                  changes: ["수정이 필요하지 않음"],
+                },
+              },
+            };
+
+            return result;
+          }
+
+          // AI가 제안한 수정사항 적용
+          finalContent = aiDecision.content || currentContent;
+          changes = aiDecision.changes || ["AI가 내용을 개선했습니다"];
+        } catch (aiError) {
           return {
             success: false,
-            error: "AI 응답을 분석할 수 없습니다.",
+            error: "AI 처리 중 오류가 발생했습니다.",
           };
         }
+      } else {
+        // 직접 업데이트인 경우
+        finalContent = updates?.content || "";
+        changes = ["직접 내용 수정"];
+      }
 
-        // AI가 수정이 불필요하다고 판단한 경우
-        if (!aiDecision.shouldUpdate) {
-          return {
-            success: true,
-            data: {
-              document,
-              updatedFields: [],
-            },
-          };
-        }
+      // Liveblocks Y.js 문서에 실시간 업데이트 적용
+      const updateSuccess = await updateDocumentContent(
+        documentId,
+        finalContent,
+        true // 마크다운 모드 활성화
+      );
 
-        // AI가 제안한 수정사항 적용
-        if (
-          aiDecision.updates.title &&
-          aiDecision.updates.title !== document.title
-        ) {
-          finalUpdates.title = aiDecision.updates.title;
-        }
-
-        if (
-          aiDecision.updates.content &&
-          aiDecision.updates.content !== document.content
-        ) {
-          finalUpdates.content = aiDecision.updates.content;
-        }
-      } catch (aiError) {
-        console.error("AI processing error:", aiError);
+      if (!updateSuccess) {
         return {
           success: false,
-          error: "AI 처리 중 오류가 발생했습니다.",
+          error: "실시간 문서 업데이트에 실패했습니다.",
         };
       }
-    }
 
-    // 기존 updates가 있으면 병합 (AI 결과를 우선으로 함)
-    if (updates) {
-      finalUpdates = { ...updates, ...finalUpdates };
-    }
-
-    // 업데이트할 내용이 없는 경우
-    if (Object.keys(finalUpdates).length === 0) {
-      // 현재 문서를 다시 조회해서 반환
-      const { data: currentDoc } = await ServerSupabase.from("documents")
-        .select("*")
-        .eq("id", documentId)
-        .single();
-
-      return {
+      const result = {
         success: true,
         data: {
-          document: currentDoc,
-          updatedFields: [],
+          content: finalContent,
+          metadata: {
+            documentId,
+            aiUserId,
+            updatedAt: new Date().toISOString(),
+            changes,
+          },
         },
       };
-    }
 
-    // Service Role로 문서 업데이트
-    const { data: updatedDocument, error: updateError } =
-      await ServerSupabase.from("documents")
-        .update(finalUpdates)
-        .eq("id", documentId)
-        .select()
-        .single();
-
-    if (updateError || !updatedDocument) {
+      return result;
+    } catch (liveblocksError) {
       return {
         success: false,
-        error: `문서 업데이트에 실패했습니다: ${
-          updateError?.message || "알 수 없는 오류"
+        error: `실시간 문서를 수정할 수 없습니다: ${
+          liveblocksError instanceof Error
+            ? liveblocksError.message
+            : "알 수 없는 오류"
         }`,
       };
     }
-
-    // 업데이트된 필드 목록 생성
-    const updatedFields: string[] = [];
-    if (finalUpdates.title !== undefined) updatedFields.push("title");
-    if (finalUpdates.content !== undefined) updatedFields.push("content");
-
-    return {
-      success: true,
-      data: {
-        document: updatedDocument,
-        updatedFields,
-      },
-    };
   } catch (error) {
-    console.error("Error in updateDocumentTool:", error);
     return {
       success: false,
       error: `문서 수정 중 오류가 발생했습니다: ${
@@ -413,11 +386,12 @@ Respond with JSON only - no additional text or formatting.`;
   }
 }
 
-// 도구 목록 및 메타데이터
+// 도구 목록 및 메타데이터 (Liveblocks 기반으로 업데이트)
 export const AGENT_TOOLS = {
   read_document: {
     name: "read_document",
-    description: "현재 작성된 문서의 내용과 목차를 읽어옵니다.",
+    description:
+      "현재 문서의 내용을 읽어옵니다. AI가 협업자로 참여하여 실시간 내용을 확인합니다.",
     parameters: {
       documentId: {
         type: "string",
@@ -435,14 +409,14 @@ export const AGENT_TOOLS = {
   update_document: {
     name: "update_document",
     description:
-      "현재 작성된 문서의 제목이나 내용을 수정합니다. AI가 사용자 요청을 분석하여 지능적으로 수정할 수 있습니다.",
+      "현재 문서의 내용을 수정합니다. AI가 협업자로 참여하여 실시간으로 문서를 편집합니다.",
     parameters: {
       documentId: {
         type: "string",
         description: "수정할 문서의 ID",
         required: true,
       },
-      userId: {
+      userId: { 
         type: "string",
         description: "요청하는 사용자의 ID",
         required: true,
@@ -451,13 +425,9 @@ export const AGENT_TOOLS = {
         type: "object",
         description: "업데이트할 데이터 (선택사항)",
         properties: {
-          title: {
-            type: "string",
-            description: "새로운 문서 제목 (선택사항)",
-          },
           content: {
             type: "string",
-            description: "새로운 문서 내용 (선택사항)",
+            description: "새로운 문서 내용 (텍스트 형태, 선택사항)",
           },
         },
         required: false,
@@ -465,7 +435,7 @@ export const AGENT_TOOLS = {
       userRequest: {
         type: "string",
         description:
-          "사용자의 수정 요청 (AI가 자동으로 분석하여 수정, 선택사항)",
+          "사용자의 수정 요청 (AI가 자동으로 분석하여 실시간 수정, 선택사항)",
         required: false,
       },
     },
@@ -473,7 +443,7 @@ export const AGENT_TOOLS = {
   },
 } as const;
 
-// 도구 실행 헬퍼 함수
+// 도구 실행 헬퍼 함수 (Liveblocks 기반으로 업데이트)
 export async function executeAgentTool(
   toolName: string,
   parameters: Record<string, unknown>
@@ -510,7 +480,7 @@ export async function executeAgentTool(
         }
 
         // updates와 userRequest 파라미터 처리
-        const updates = parameters.updates as UpdateDocumentData | undefined;
+        const updates = parameters.updates as { content?: string } | undefined;
         const userRequest = parameters.userRequest as string | undefined;
 
         // updates가 있는 경우 타입 검증
@@ -543,7 +513,6 @@ export async function executeAgentTool(
         };
     }
   } catch (error) {
-    console.error("Error executing agent tool:", error);
     return {
       success: false,
       error: `도구 실행 중 오류가 발생했습니다: ${
