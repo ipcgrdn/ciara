@@ -5,6 +5,11 @@ import {
   updateDocumentContent,
   createAIUserId,
 } from "./liveblocks-utils";
+import {
+  DOCUMENT_EDITING_PROMPT,
+  PROMPT_SETTINGS,
+  PromptBuilder,
+} from "./prompts";
 
 // 도구 결과 타입 정의
 export interface ToolResult<T = unknown> {
@@ -58,7 +63,7 @@ async function verifyDocumentOwnership(
     const isOwner = !!data;
 
     return isOwner;
-  } catch (error) {
+  } catch {
     return false;
   }
 }
@@ -213,71 +218,23 @@ export async function updateDocumentTool(
           apiKey: process.env.ANTHROPIC_API_KEY,
         });
 
-        const systemPrompt = `You are an elite document editing AI.
-
-CORE MISSION: Transform user requests into optimal document modifications with surgical precision.
-
-CRITICAL: Respond ONLY with valid JSON. NO extra formatting, NO explanations outside JSON.
-
-ANALYSIS FRAMEWORK:
-1. UNDERSTAND USER INTENT: Decode what the user truly wants
-2. EVALUATE CURRENT CONTENT: Assess document quality and improvement potential  
-3. DETERMINE OPTIMAL CHANGES: Make intelligent decisions about modifications
-4. EXECUTE WITH PRECISION: Apply changes that improve overall quality
-
-MODIFICATION STRATEGIES:
-- Improve flow and readability
-- Enhance tone and style consistency
-- Add compelling details where needed
-- Fix grammar and structural issues
-- Preserve core message and intent
-- Make content more engaging
-- Optimize for target audience
-
-CRITICAL FORMATTING RULES:
-- Use plain text with proper line breaks (\\n) between paragraphs
-- Each paragraph should be separated by a single newline character
-- Preserve natural paragraph breaks for readability
-- Ensure content flows naturally when displayed in the editor
-
-RESPONSE SCHEMA:
-{
-  "shouldUpdate": boolean,
-  "content": "new complete content",
-  "changes": ["list of changes made"],
-  "reasoning": "Concise explanation of changes"
-}
-
-QUALITY STANDARDS:
-- Only suggest changes that genuinely improve the document
-- Preserve user's voice and intent
-- Maintain factual accuracy
-- Ensure changes are contextually appropriate
-- Consider real-time collaboration context
-- Use markdown formatting to enhance readability and structure
-- Choose appropriate formatting that matches content hierarchy and importance`;
-
-        const userMessage = `DOCUMENT EDITING REQUEST
-
-Current Document Content:
-${currentContent || "[Empty document]"}
-
-User Request: "${userRequest}"
-
-TASK: Analyze the content and user request, then determine optimal modifications for real-time collaborative editing.`;
+        const userMessage = PromptBuilder.buildDocumentEditingContext(
+          currentContent,
+          userRequest
+        );
 
         try {
           const response = await anthropic.messages.create({
-            model: "claude-sonnet-4-20250514",
-            max_tokens: 4096,
-            system: systemPrompt,
+            model: PROMPT_SETTINGS.DOCUMENT_EDITING.model,
+            max_tokens: PROMPT_SETTINGS.DOCUMENT_EDITING.maxTokens,
+            system: DOCUMENT_EDITING_PROMPT,
             messages: [
               {
                 role: "user",
                 content: userMessage,
               },
             ],
-            temperature: 0.3,
+            temperature: PROMPT_SETTINGS.DOCUMENT_EDITING.temperature,
           });
 
           const responseText =
@@ -298,7 +255,7 @@ TASK: Analyze the content and user request, then determine optimal modifications
             }
 
             aiDecision = JSON.parse(jsonText);
-          } catch (parseError) {
+          } catch {
             return {
               success: false,
               error: "AI 응답을 분석할 수 없습니다.",
@@ -326,7 +283,7 @@ TASK: Analyze the content and user request, then determine optimal modifications
           // AI가 제안한 수정사항 적용
           finalContent = aiDecision.content || currentContent;
           changes = aiDecision.changes || ["AI가 내용을 개선했습니다"];
-        } catch (aiError) {
+        } catch {
           return {
             success: false,
             error: "AI 처리 중 오류가 발생했습니다.",
@@ -416,7 +373,7 @@ export const AGENT_TOOLS = {
         description: "수정할 문서의 ID",
         required: true,
       },
-      userId: { 
+      userId: {
         type: "string",
         description: "요청하는 사용자의 ID",
         required: true,

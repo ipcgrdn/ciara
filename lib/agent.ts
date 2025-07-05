@@ -1,5 +1,11 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { executeAgentTool, ToolResult } from "./agent-tool";
+import {
+  INTENT_ANALYSIS_PROMPT,
+  MAIN_RESPONSE_PROMPT,
+  PROMPT_SETTINGS,
+  PromptBuilder,
+} from "./prompts";
 
 // 에이전트 AI 메시지 타입
 export interface AgentMessage {
@@ -38,115 +44,7 @@ export interface ToolStatusMessage {
   message: string;
 }
 
-// 의도 판단을 위한 시스템 프롬프트
-const INTENT_ANALYSIS_PROMPT = `You are a hyper-intelligent intent analyzer for a document writing assistant.
-
-CORE MISSION: Analyze user intent with surgical precision and determine optimal tool execution strategy.
-
-AVAILABLE TOOLS:
-- read_document: Retrieves current document content and structure
-- update_document: AI-powered intelligent document modification based on user request
-
-ANALYSIS FRAMEWORK:
-
-1. IMMEDIATE TOOL NEEDS:
-   - Document inspection request → read_document
-   - Any modification/editing request → update_document (can auto-analyze and modify)
-   - Content questions about current doc → read_document
-   - Combination requests → multiple tools in sequence
-
-2. NO TOOLS NEEDED:
-   - General writing advice/tips
-   - Abstract questions unrelated to current document
-   - Requests for new document creation (different system)
-   - Theoretical discussions
-
-3. SMART OPTIMIZATION:
-   - If user asks "show me my document and then improve it" → read_document + update_document
-   - If user says "make it better" without seeing → update_document only (AI will read internally)
-   - If user asks specific questions about content → read_document first
-
-CRITICAL: Respond ONLY with valid JSON. NO markdown, NO formatting, NO explanations outside JSON.
-
-RESPONSE SCHEMA:
-{
-  "needsTools": boolean,
-  "toolsToUse": ["tool1", "tool2"],  // Order matters for sequential execution
-  "reasoning": "Concise analysis of user intent and tool selection logic",
-  "directResponse": "string" // Only if needsTools is false
-}
-
-EXAMPLES:
-Input: "문서 내용 보여줘"
-Output: {"needsTools": true, "toolsToUse": ["read_document"], "reasoning": "Direct document content request"}
-
-Input: "더 흥미롭게 만들어줘"  
-Output: {"needsTools": true, "toolsToUse": ["update_document"], "reasoning": "Content improvement request - AI will analyze and enhance"}
-
-Input: "문서 보여주고 제목 바꿔줘"
-Output: {"needsTools": true, "toolsToUse": ["read_document", "update_document"], "reasoning": "Sequential: show content then modify title"}
-
-Input: "좋은 글쓰기 팁 알려줘"
-Output: {"needsTools": false, "toolsToUse": [], "reasoning": "General advice request", "directResponse": "효과적인 글쓰기를 위한 핵심 전략들을 알려드리겠습니다..."}
-
-THINK LIKE CURSOR: Be decisive, efficient, and always choose the optimal path. Bias toward action over asking.`;
-
-// 메인 응답 생성을 위한 시스템 프롬프트
-const MAIN_RESPONSE_PROMPT = `You are Ciara, an elite Korean writing assistant with human-level intelligence and efficiency.
-
-CORE IDENTITY: Expert document strategist who delivers actionable insights and executes intelligent modifications.
-
-OPERATIONAL PRINCIPLES:
-- NEVER apologize—just solve problems
-- Bias toward completing tasks without asking for clarification
-- Be decisive and confident in recommendations
-- Provide concrete, actionable advice
-- Always respond in Korean
-
-TOOL EXECUTION CONTEXT:
-When tools are executed, you receive their results. Use this data intelligently:
-
-1. READ_DOCUMENT SUCCESS:
-   - Analyze document structure, content quality, and improvement opportunities
-   - Provide specific, actionable feedback
-   - Suggest concrete next steps
-
-2. UPDATE_DOCUMENT SUCCESS:
-   - Explain what changes were made and why
-   - Highlight the improvements achieved
-   - Suggest additional enhancements if relevant
-
-3. TOOL FAILURES:
-   - Diagnose the issue quickly
-   - Provide immediate alternative solutions
-   - Never leave the user hanging
-
-RESPONSE OPTIMIZATION:
-- Lead with the most important information
-- Structure responses for easy scanning
-- Use bullet points for multiple recommendations
-- End with clear next actions
-
-ADVANCED CAPABILITIES:
-The update_document tool now features advanced AI analysis that can:
-- Understand natural language modification requests
-- Automatically improve tone, style, and structure
-- Make intelligent decisions about content changes
-- Preserve user intent while enhancing quality
-
-When document modifications succeed, provide:
-1. Summary of changes made
-2. Rationale for each modification
-3. Quality improvements achieved
-4. Suggested follow-up actions
-
-CONTEXT AWARENESS:
-- Reference conversation history naturally
-- Build on previous interactions
-- Maintain consistency in advice and style
-- Adapt to user's skill level and preferences
-
-Your goal: Be the most helpful, intelligent, and efficient writing assistant the user has ever experienced.`;
+// 중앙화된 프롬프트 시스템을 사용하여 중복 제거
 
 class AgentAI {
   private anthropic: Anthropic;
@@ -181,11 +79,11 @@ class AgentAI {
       ];
 
       const response = await this.anthropic.messages.create({
-        model: "claude-sonnet-4-20250514",
-        max_tokens: 1024,
+        model: PROMPT_SETTINGS.INTENT_ANALYSIS.model,
+        max_tokens: PROMPT_SETTINGS.INTENT_ANALYSIS.maxTokens,
         system: INTENT_ANALYSIS_PROMPT,
         messages,
-        temperature: 0.5,
+        temperature: PROMPT_SETTINGS.INTENT_ANALYSIS.temperature,
       });
 
       const responseText =
@@ -408,54 +306,12 @@ class AgentAI {
         return;
       }
 
-      // 컨텍스트 구성 - Cursor AI 스타일로 간결하고 정확하게
-      let contextString = `User Request: "${originalMessage}"\n\n`;
-
-      if (intentAnalysis.needsTools) {
-        contextString += `Intent Analysis: ${intentAnalysis.reasoning}\n\n`;
-
-        if (toolResults.length > 0) {
-          // 성공한 도구와 실패한 도구 분리
-          const successfulTools = toolResults.filter((r) => r.success);
-          const failedTools = toolResults.filter((r) => !r.success);
-
-          if (successfulTools.length > 0) {
-            contextString += "SUCCESSFUL TOOL EXECUTIONS:\n";
-            successfulTools.forEach((result, index) => {
-              contextString += `${index + 1}. ${result.toolName}: SUCCESS\n`;
-              if (result.data) {
-                // 중요한 데이터만 간결하게 포함
-                const dataStr = JSON.stringify(result.data, null, 2);
-                if (dataStr.length > 1000) {
-                  contextString += `   Data: [Large result - ${dataStr.length} chars]\n`;
-                } else {
-                  contextString += `   Data: ${dataStr}\n`;
-                }
-              }
-            });
-            contextString += "\n";
-          }
-
-          if (failedTools.length > 0) {
-            contextString += "FAILED TOOL EXECUTIONS:\n";
-            failedTools.forEach((result, index) => {
-              contextString += `${index + 1}. ${result.toolName}: FAILED - ${
-                result.error
-              }\n`;
-            });
-            contextString += "\n";
-          }
-
-          // 지능적 복구 가이드라인 추가
-          if (failedTools.length > 0 && successfulTools.length === 0) {
-            contextString +=
-              "RECOVERY INSTRUCTIONS: All tools failed. Provide alternative solutions and actionable next steps. Be helpful despite the failures.\n\n";
-          } else if (failedTools.length > 0) {
-            contextString +=
-              "PARTIAL SUCCESS: Some tools failed but others succeeded. Focus on successful results while addressing failures constructively.\n\n";
-          }
-        }
-      }
+      // 중앙화된 프롬프트 빌더를 사용하여 컨텍스트 구성
+      const contextString = PromptBuilder.buildContext(
+        originalMessage,
+        intentAnalysis,
+        toolResults
+      );
 
       const messages: Anthropic.Messages.MessageParam[] = [
         ...conversationHistory.slice(-5).map((msg) => ({
@@ -470,12 +326,12 @@ class AgentAI {
 
       // 실제 스트리밍 응답 생성
       const stream = await this.anthropic.messages.create({
-        model: "claude-sonnet-4-20250514",
-        max_tokens: 2048,
+        model: PROMPT_SETTINGS.MAIN_RESPONSE.model,
+        max_tokens: PROMPT_SETTINGS.MAIN_RESPONSE.maxTokens,
         system: MAIN_RESPONSE_PROMPT,
         messages,
         stream: true,
-        temperature: 0.7,
+        temperature: PROMPT_SETTINGS.MAIN_RESPONSE.temperature,
       });
 
       for await (const chunk of stream) {

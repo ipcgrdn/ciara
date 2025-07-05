@@ -43,7 +43,7 @@ export async function connectAIToRoom(roomId: string) {
     const room = liveblocks.getRoom(roomId);
 
     return { room, aiUserId };
-  } catch (error) {
+  } catch {
     throw new Error(`AI가 Room ${roomId}에 연결할 수 없습니다.`);
   }
 }
@@ -77,7 +77,7 @@ export async function getDocumentContent(roomId: string): Promise<string> {
     }
 
     return "";
-  } catch (error) {
+  } catch {
     return "";
   }
 }
