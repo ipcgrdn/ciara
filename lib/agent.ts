@@ -36,15 +36,13 @@ export interface AgentResult {
   reasoning: string;
 }
 
-// 도구 상태 메시지 타입 추가
+// 도구 상태 메시지 타입
 export interface ToolStatusMessage {
   type: "tool_status";
   toolName: string;
   status: "starting" | "in_progress" | "completed" | "failed";
   message: string;
 }
-
-// 중앙화된 프롬프트 시스템을 사용하여 중복 제거
 
 class AgentAI {
   private anthropic: Anthropic;
@@ -138,11 +136,17 @@ class AgentAI {
         completed: "문서 읽기 완료!",
         failed: "문서 읽기에 실패했어요.",
       },
-      update_document: {
-        starting: "문서를 개선하고 있어요...",
-        in_progress: "내용을 분석하고 수정 중...",
-        completed: "문서 수정 완료!",
-        failed: "문서 수정에 실패했어요.",
+      get_document_modifications: {
+        starting: "문서 작성을 시작합니다...",
+        in_progress: "문서를 작성하고 있습니다...",
+        completed: "문서 작성 완료!",
+        failed: "문서 작성에 실패했어요.",
+      },
+      process_modification_response: {
+        starting: "제안을 처리하고 있어요...",
+        in_progress: "요청사항을 반영하고 있어요...",
+        completed: "제안 처리 완료!",
+        failed: "제안 처리에 실패했어요.",
       },
     };
 
@@ -159,7 +163,8 @@ class AgentAI {
     toolName: string,
     documentId: string,
     userId: string,
-    originalMessage: string
+    originalMessage: string,
+    additionalParams?: Record<string, unknown>
   ): Promise<ToolCallResult> {
     try {
       let result: ToolResult;
@@ -172,12 +177,27 @@ class AgentAI {
           });
           break;
 
-        case "update_document":
-          result = await executeAgentTool("update_document", {
+        case "get_document_modifications":
+          result = await executeAgentTool("get_document_modifications", {
             documentId,
             userId,
             userRequest: originalMessage,
           });
+          break;
+
+        case "process_modification_response":
+          if (additionalParams?.response) {
+            result = await executeAgentTool("process_modification_response", {
+              documentId,
+              userId,
+              response: additionalParams.response,
+            });
+          } else {
+            result = {
+              success: false,
+              error: "수정 제안 응답 데이터가 필요합니다.",
+            };
+          }
           break;
 
         default:
@@ -213,50 +233,49 @@ class AgentAI {
   ): AsyncGenerator<ToolStatusMessage | ToolCallResult[], void, unknown> {
     const results: ToolCallResult[] = [];
 
-    // Cursor AI 스타일 병렬 처리 최적화
+    // read_document가 있는 경우 먼저 실행하고, 나머지는 병렬 처리
     const hasReadDocument = toolsToUse.includes("read_document");
-    const hasOtherTools = toolsToUse.some((tool) => tool !== "read_document");
+    const otherTools = toolsToUse.filter((tool) => tool !== "read_document");
 
-    if (hasReadDocument && hasOtherTools) {
-      // 순차 처리: read_document 먼저, 나머지는 병렬
-      for (const toolName of toolsToUse) {
-        // 도구 시작 상태 전송
-        yield {
-          type: "tool_status",
-          toolName,
-          status: "starting",
-          message: this.getToolStatusMessage(toolName, "starting"),
-        };
+    if (hasReadDocument) {
+      // read_document 먼저 실행
+      yield {
+        type: "tool_status",
+        toolName: "read_document",
+        status: "starting",
+        message: this.getToolStatusMessage("read_document", "starting"),
+      };
 
-        const result = await this.executeSingleTool(
-          toolName,
-          documentId,
-          userId,
-          originalMessage
-        );
+      const readResult = await this.executeSingleTool(
+        "read_document",
+        documentId,
+        userId,
+        originalMessage
+      );
 
-        results.push(result);
+      results.push(readResult);
 
-        // 도구 완료 상태 전송
-        yield {
-          type: "tool_status",
-          toolName,
-          status: result.success ? "completed" : "failed",
-          message: this.getToolStatusMessage(
-            toolName,
-            result.success ? "completed" : "failed"
-          ),
-        };
+      yield {
+        type: "tool_status",
+        toolName: "read_document",
+        status: readResult.success ? "completed" : "failed",
+        message: this.getToolStatusMessage(
+          "read_document",
+          readResult.success ? "completed" : "failed"
+        ),
+      };
 
-        // 중요한 도구가 실패하면 후속 도구 실행 중단
-        if (!result.success && toolName === "read_document") {
-          break;
-        }
+      // read_document가 실패하면 후속 도구 실행 중단
+      if (!readResult.success) {
+        yield results;
+        return;
       }
-    } else {
-      // 병렬 처리 가능한 경우
+    }
+
+    // 나머지 도구들 병렬 실행
+    if (otherTools.length > 0) {
       // 병렬 도구들의 시작 상태 전송
-      for (const toolName of toolsToUse) {
+      for (const toolName of otherTools) {
         yield {
           type: "tool_status",
           toolName,
@@ -265,7 +284,7 @@ class AgentAI {
         };
       }
 
-      const toolPromises = toolsToUse.map((toolName) =>
+      const toolPromises = otherTools.map((toolName) =>
         this.executeSingleTool(toolName, documentId, userId, originalMessage)
       );
 
@@ -369,10 +388,59 @@ class AgentAI {
     message: string,
     documentId: string,
     userId: string,
-    conversationHistory: AgentMessage[] = []
+    conversationHistory: AgentMessage[] = [],
+    proposalResponse?: {
+      action: "approve" | "reject";
+      customContent?: string;
+    }
   ): AsyncGenerator<string | ToolStatusMessage, AgentResult, unknown> {
     try {
-      // 1. 의도 분석 (사용자에게 숨김)
+      // 제안 응답 처리가 있는 경우 바로 처리
+      if (proposalResponse) {
+        yield {
+          type: "tool_status",
+          toolName: "process_modification_response",
+          status: "starting",
+          message: this.getToolStatusMessage(
+            "process_modification_response",
+            "starting"
+          ),
+        };
+
+        const processResult = await this.executeSingleTool(
+          "process_modification_response",
+          documentId,
+          userId,
+          message,
+          { response: proposalResponse }
+        );
+
+        yield {
+          type: "tool_status",
+          toolName: "process_modification_response",
+          status: processResult.success ? "completed" : "failed",
+          message: this.getToolStatusMessage(
+            "process_modification_response",
+            processResult.success ? "completed" : "failed"
+          ),
+        };
+
+        const responseMessage = processResult.success
+          ? proposalResponse.action === "approve"
+            ? "수정 제안이 승인되어 문서에 적용되었습니다."
+            : "수정 제안이 거절되었습니다."
+          : "수정 제안 처리 중 오류가 발생했습니다.";
+
+        yield responseMessage;
+
+        return {
+          response: responseMessage,
+          toolsUsed: [processResult],
+          reasoning: "수정 제안 응답 처리",
+        };
+      }
+
+      // 1. 의도 분석
       const intentAnalysis = await this.analyzeIntent(
         message,
         conversationHistory
@@ -393,6 +461,21 @@ class AgentAI {
           if (Array.isArray(chunk)) {
             // 최종 도구 결과
             toolResults = chunk;
+
+            // get_document_modifications 도구 결과가 있으면 수정 제안으로 전달
+            const modificationResult = toolResults.find(
+              (result) =>
+                result.toolName === "get_document_modifications" &&
+                result.success
+            );
+
+            if (modificationResult && modificationResult.data) {
+              // 수정 제안을 별도로 yield (스트림에서 처리하도록)
+              yield {
+                type: "modification_proposal",
+                data: modificationResult.data,
+              } as any;
+            }
           } else {
             // 도구 상태 메시지
             yield chunk;

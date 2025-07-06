@@ -19,6 +19,8 @@ import {
   Clock,
 } from "lucide-react";
 import { Card } from "../ui/card";
+import { ModificationProposal } from "./modification-proposal";
+import { type DocumentModificationResult } from "@/lib/agent-tool";
 
 interface Message {
   id: string;
@@ -40,6 +42,8 @@ interface Message {
     }>;
     reasoning: string;
   };
+  modificationProposal?: DocumentModificationResult;
+  isProposalProcessing?: boolean;
 }
 
 interface ChatSession {
@@ -349,6 +353,21 @@ export function AiSidebar({ className, documentId }: AiSidebarProps) {
                   )
                 );
               }
+
+              // 수정 제안 처리
+              if (parsed.modificationProposal) {
+                // 메시지에 수정 제안 추가
+                setMessages((prev) =>
+                  prev.map((msg) =>
+                    msg.id === loadingMessage.id
+                      ? {
+                          ...msg,
+                          modificationProposal: parsed.modificationProposal,
+                        }
+                      : msg
+                  )
+                );
+              }
             } catch {
               // JSON 파싱 에러는 무시 (불완전한 데이터일 수 있음)
               continue;
@@ -429,6 +448,119 @@ export function AiSidebar({ className, documentId }: AiSidebarProps) {
       setIsLoading(false);
     }
   };
+
+  // 수정 제안 처리 함수들
+  const handleProposalApprove = useCallback(
+    async (messageId: string, proposal: DocumentModificationResult) => {
+      if (!user || !documentId) return;
+
+      // 처리 중 상태로 변경
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.id === messageId ? { ...msg, isProposalProcessing: true } : msg
+        )
+      );
+
+      try {
+        const response = await fetch("/api/ai/stream", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            message: `수정 제안을 승인합니다. 제안된 내용을 문서에 적용해주세요.`,
+            documentId: documentId,
+            userId: user.id,
+            proposalResponse: {
+              action: "approve",
+              customContent: proposal.suggestedContent,
+            },
+          }),
+        });
+
+        if (response.ok) {
+          // 제안 승인 완료 - 제안 UI 제거
+          setMessages((prev) =>
+            prev.map((msg) =>
+              msg.id === messageId
+                ? {
+                    ...msg,
+                    modificationProposal: undefined,
+                    isProposalProcessing: false,
+                    content:
+                      msg.content +
+                      "\n\n**수정 제안이 승인되어 문서에 적용되었습니다.**",
+                  }
+                : msg
+            )
+          );
+        }
+      } catch (error) {
+        console.error("제안 승인 오류:", error);
+        setMessages((prev) =>
+          prev.map((msg) =>
+            msg.id === messageId ? { ...msg, isProposalProcessing: false } : msg
+          )
+        );
+      }
+    },
+    [user, documentId]
+  );
+
+  const handleProposalReject = useCallback(
+    async (messageId: string) => {
+      if (!user || !documentId) return;
+
+      // 처리 중 상태로 변경
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.id === messageId ? { ...msg, isProposalProcessing: true } : msg
+        )
+      );
+
+      try {
+        const response = await fetch("/api/ai/stream", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            message: `수정 제안을 거절합니다.`,
+            documentId: documentId,
+            userId: user.id,
+            proposalResponse: {
+              action: "reject",
+            },
+          }),
+        });
+
+        if (response.ok) {
+          // 제안 거절 완료 - 제안 UI 제거
+          setMessages((prev) =>
+            prev.map((msg) =>
+              msg.id === messageId
+                ? {
+                    ...msg,
+                    modificationProposal: undefined,
+                    isProposalProcessing: false,
+                    content:
+                      msg.content + "\n\n**수정 제안이 거절되었습니다.**",
+                  }
+                : msg
+            )
+          );
+        }
+      } catch (error) {
+        console.error("제안 거절 오류:", error);
+        setMessages((prev) =>
+          prev.map((msg) =>
+            msg.id === messageId ? { ...msg, isProposalProcessing: false } : msg
+          )
+        );
+      }
+    },
+    [user, documentId]
+  );
 
   // 대화 히스토리 관련 함수들
   const loadCurrentSession = useCallback(async () => {
@@ -589,7 +721,7 @@ export function AiSidebar({ className, documentId }: AiSidebarProps) {
       </div>
 
       {/* AI 사이드바 메인 콘텐츠 */}
-      <Card className="flex-1 flex flex-col p-0 bg-white/40 border-slate-200/60 overflow-hidden">
+      <Card className="flex-1 flex flex-col p-0 bg-white/40 border-slate-200/60 overflow-hidden gap-2">
         {/* 상단 헤더 - 고정 */}
         <div className="flex-shrink-0 px-3 py-2 border-b border-black/5 bg-white/80 backdrop-blur-sm">
           <div className="flex items-center justify-between">
@@ -627,7 +759,7 @@ export function AiSidebar({ className, documentId }: AiSidebarProps) {
           <div className="space-y-3">
             {showHistory ? (
               // 히스토리 뷰
-              <div className="space-y-2 p-2">
+              <div className="space-y-2">
                 <div className="flex items-center justify-between mb-3">
                   {isLoadingHistory && (
                     <div className="w-3 h-3 border border-slate-300 border-t-transparent rounded-full animate-spin" />
@@ -881,6 +1013,23 @@ export function AiSidebar({ className, documentId }: AiSidebarProps) {
                                 </div>
                               )}
                             </div>
+
+                            {/* 수정 제안 UI */}
+                            {message.modificationProposal && (
+                              <ModificationProposal
+                                proposal={message.modificationProposal}
+                                onApprove={() =>
+                                  handleProposalApprove(
+                                    message.id,
+                                    message.modificationProposal!
+                                  )
+                                }
+                                onReject={() =>
+                                  handleProposalReject(message.id)
+                                }
+                                isProcessing={message.isProposalProcessing}
+                              />
+                            )}
                           </div>
                         )}
                       </div>

@@ -12,12 +12,23 @@ interface RequestBody {
   documentId: string;
   userId: string;
   conversationHistory?: unknown[];
+  proposalResponse?: {
+    action: "approve" | "reject";
+    feedback?: string;
+    customContent?: string;
+  };
 }
 
 export async function POST(request: NextRequest) {
   try {
     const body: RequestBody = await request.json();
-    const { message, documentId, userId, conversationHistory = [] } = body;
+    const {
+      message,
+      documentId,
+      userId,
+      conversationHistory = [],
+      proposalResponse,
+    } = body;
 
     // 필수 파라미터 검증
     if (!message || typeof message !== "string") {
@@ -68,7 +79,8 @@ export async function POST(request: NextRequest) {
       message,
       documentId,
       userId,
-      validHistory
+      validHistory,
+      proposalResponse
     );
 
     // ReadableStream 생성
@@ -96,6 +108,21 @@ export async function POST(request: NextRequest) {
                   status: toolStatus.status,
                   message: toolStatus.message,
                 },
+              })}\n\n`;
+              controller.enqueue(new TextEncoder().encode(data));
+            } else if (
+              typeof chunk === "object" &&
+              chunk !== null &&
+              "type" in chunk &&
+              (chunk as any).type === "modification_proposal"
+            ) {
+              // 수정 제안 스트리밍
+              const proposalData = chunk as unknown as {
+                type: "modification_proposal";
+                data: unknown;
+              };
+              const data = `data: ${JSON.stringify({
+                modificationProposal: proposalData.data,
               })}\n\n`;
               controller.enqueue(new TextEncoder().encode(data));
             } else if (

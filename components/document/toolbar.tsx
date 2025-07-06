@@ -98,7 +98,7 @@ const HeadingLevelButton = () => {
   const { editor } = useEditorStore();
 
   const headings = [
-    { label: "Normal", value: 0, fontSize: "16px" },
+    { label: "normal", value: 0, fontSize: "16px" },
     { label: "Heading 1", value: 1, fontSize: "32px" },
     { label: "Heading 2", value: 2, fontSize: "24px" },
     { label: "Heading 3", value: 3, fontSize: "20px" },
@@ -112,7 +112,7 @@ const HeadingLevelButton = () => {
         return `Heading ${level}`;
       }
     }
-    return "Normal";
+    return "normal";
   };
 
   return (
@@ -439,7 +439,7 @@ const FontSizeButton = () => {
 
   const currentFontSize = editor?.getAttributes("textStyle").fontSize
     ? editor?.getAttributes("textStyle").fontSize.replace("px", "")
-    : "16";
+    : "14";
 
   const [fontSize, setFontSize] = useState(currentFontSize);
   const [inputValue, setInputValue] = useState(fontSize);

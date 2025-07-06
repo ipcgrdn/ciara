@@ -140,7 +140,7 @@ export const Editor = () => {
         rightMargin={rightMargin}
         onMarginsChange={handleMarginsChange}
       />
-      <div className="min-x-max flex justify-center w-[816px] py-4 print:py-0 mx-auto print:w-full print:min-w-0">
+      <div className="min-x-max flex justify-center w-[816px] py-4 print:py-0 mx-auto print:w-full print:min-w-0 text-sm">
         <EditorContent editor={editor} />
         <Threads editor={editor} />
       </div>
