@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback, useEffect } from "react";
+import React, { useState, useRef, useCallback, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -20,7 +20,12 @@ import {
 } from "lucide-react";
 import { Card } from "../ui/card";
 import { ModificationProposal } from "./modification-proposal";
-import { type DocumentModificationResult } from "@/lib/agent-tool";
+import { IndexProposal } from "./index-proposal";
+import {
+  type DocumentModificationResult,
+  type DocumentIndexResult,
+} from "@/lib/agent-tool";
+import { saveDocumentIndex } from "@/lib/index";
 
 interface Message {
   id: string;
@@ -43,6 +48,7 @@ interface Message {
     reasoning: string;
   };
   modificationProposal?: DocumentModificationResult;
+  indexResult?: DocumentIndexResult;
   isProposalProcessing?: boolean;
 }
 
@@ -368,6 +374,21 @@ export function AiSidebar({ className, documentId }: AiSidebarProps) {
                   )
                 );
               }
+
+              // 목차 생성 결과 처리
+              if (parsed.indexResult) {
+                // 메시지에 목차 결과 추가
+                setMessages((prev) =>
+                  prev.map((msg) =>
+                    msg.id === loadingMessage.id
+                      ? {
+                          ...msg,
+                          indexResult: parsed.indexResult,
+                        }
+                      : msg
+                  )
+                );
+              }
             } catch {
               // JSON 파싱 에러는 무시 (불완전한 데이터일 수 있음)
               continue;
@@ -561,6 +582,71 @@ export function AiSidebar({ className, documentId }: AiSidebarProps) {
     },
     [user, documentId]
   );
+
+  // 목차 생성 결과 처리 함수들
+  const handleIndexApprove = useCallback(
+    async (messageId: string, indexResult: DocumentIndexResult) => {
+      if (!user || !documentId) return;
+
+      // 처리 중 상태로 변경
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.id === messageId ? { ...msg, isProposalProcessing: true } : msg
+        )
+      );
+
+      try {
+        // Supabase에 목차 저장
+        await saveDocumentIndex(documentId, indexResult.indexContent);
+
+        // 목차 승인 완료 - 목차 UI 제거하고 성공 메시지 추가
+        setMessages((prev) =>
+          prev.map((msg) =>
+            msg.id === messageId
+              ? {
+                  ...msg,
+                  indexResult: undefined,
+                  isProposalProcessing: false,
+                  content:
+                    msg.content +
+                    "\n\n**목차가 저장되었습니다. Index 사이드바에서 확인하실 수 있습니다.**",
+                }
+              : msg
+          )
+        );
+
+        // 목차 저장 완료 이벤트 발생 (index-sidebar 업데이트를 위해)
+        window.dispatchEvent(
+          new CustomEvent("indexUpdated", {
+            detail: { documentId, indexContent: indexResult.indexContent },
+          })
+        );
+      } catch (error) {
+        console.error("목차 저장 오류:", error);
+        setMessages((prev) =>
+          prev.map((msg) =>
+            msg.id === messageId ? { ...msg, isProposalProcessing: false } : msg
+          )
+        );
+      }
+    },
+    [user, documentId]
+  );
+
+  const handleIndexReject = useCallback(async (messageId: string) => {
+    // 목차 거절 - 목차 UI 제거
+    setMessages((prev) =>
+      prev.map((msg) =>
+        msg.id === messageId
+          ? {
+              ...msg,
+              indexResult: undefined,
+              content: msg.content + "\n\n**목차 제안이 거절되었습니다.**",
+            }
+          : msg
+      )
+    );
+  }, []);
 
   // 대화 히스토리 관련 함수들
   const loadCurrentSession = useCallback(async () => {
@@ -1027,6 +1113,21 @@ export function AiSidebar({ className, documentId }: AiSidebarProps) {
                                 onReject={() =>
                                   handleProposalReject(message.id)
                                 }
+                                isProcessing={message.isProposalProcessing}
+                              />
+                            )}
+
+                            {/* 목차 생성 결과 UI */}
+                            {message.indexResult && (
+                              <IndexProposal
+                                indexResult={message.indexResult}
+                                onApprove={() =>
+                                  handleIndexApprove(
+                                    message.id,
+                                    message.indexResult!
+                                  )
+                                }
+                                onReject={() => handleIndexReject(message.id)}
                                 isProcessing={message.isProposalProcessing}
                               />
                             )}

@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { Plus, Trash2, GripVertical, Edit3 } from "lucide-react";
+import { Plus, Trash2, GripVertical, Edit3, Hash } from "lucide-react";
 import {
   DndContext,
   closestCenter,
@@ -62,12 +62,12 @@ const SortableOutlineItem = React.memo(
     return (
       <div ref={setNodeRef} style={style} className="group relative">
         <div
-          className={`flex items-center gap-3 p-3 bg-white/80 rounded-xl border border-gray-200/40 transition-all duration-200 group-hover:bg-white/90 group-hover:shadow-sm ${
+          className={`flex items-center gap-3 p-3 bg-white/60 rounded-md border border-white/30 transition-all duration-200 group-hover:bg-white/80 ${
             item.level === 1
-              ? "border-l-4 border-l-blue-500"
+              ? "font-semibold text-gray-900 bg-blue-50/50"
               : item.level === 2
-              ? "border-l-4 border-l-purple-400 ml-4"
-              : "border-l-4 border-l-gray-400 ml-8"
+              ? "font-medium text-gray-800 ml-4 bg-blue-50/30"
+              : "text-gray-700 ml-8 bg-blue-50/20"
           } ${isDragging ? "shadow-lg" : ""}`}
         >
           <GripVertical
@@ -76,6 +76,10 @@ const SortableOutlineItem = React.memo(
             {...listeners}
           />
 
+          <span className="text-blue-600 font-mono text-xs mt-0.5 flex-shrink-0">
+            {"#".repeat(item.level)}
+          </span>
+
           <select
             value={item.level}
             onChange={(e) =>
@@ -83,7 +87,7 @@ const SortableOutlineItem = React.memo(
                 level: parseInt(e.target.value),
               })
             }
-            className="text-xs bg-white/90 border border-gray-300/60 rounded-lg px-2 py-1 font-medium text-gray-700 hover:bg-white focus:outline-none focus:border-purple-300"
+            className="text-xs bg-white/90 border border-gray-300/60 rounded px-2 py-1 font-medium text-gray-700 hover:bg-white focus:outline-none focus:border-blue-300"
           >
             <option value={1}>H1</option>
             <option value={2}>H2</option>
@@ -98,25 +102,25 @@ const SortableOutlineItem = React.memo(
                 title: e.target.value,
               })
             }
-            className="flex-1 bg-transparent border-none outline-none text-gray-900 font-medium placeholder-gray-400 focus:placeholder-gray-300"
+            className="flex-1 bg-transparent border-none outline-none text-gray-900 font-medium placeholder-gray-400 focus:placeholder-gray-300 text-sm"
             placeholder="목차 제목 입력"
           />
 
           <div className="opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
             <button
               onClick={() => onAdd(index, item.level)}
-              className="p-1.5 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+              className="p-1.5 text-black hover:bg-white/60 rounded"
               title="아래에 추가"
             >
-              <Plus className="h-4 w-4" />
+              <Plus className="h-3 w-3" />
             </button>
             {outlineLength > 1 && (
               <button
                 onClick={() => onRemove(item.id)}
-                className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                className="p-1.5 text-black hover:bg-white/60 rounded"
                 title="삭제"
               >
-                <Trash2 className="h-4 w-4" />
+                <Trash2 className="h-3 w-3" />
               </button>
             )}
           </div>
@@ -231,7 +235,7 @@ export function OutlineEditModal({
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 bg-black/5 backdrop-blur-md z-[100] flex items-center justify-center p-6"
+        className="fixed inset-0 bg-black/20 backdrop-blur-sm z-50 flex items-center justify-center"
         onClick={(e) => {
           if (e.target === e.currentTarget) {
             onClose();
@@ -246,42 +250,41 @@ export function OutlineEditModal({
             duration: 0.4,
             ease: [0.25, 0.46, 0.45, 0.94],
           }}
-          className="w-full max-w-4xl mx-auto"
+          className="relative z-10 w-full max-w-3xl mx-4 max-h-[90vh] overflow-y-auto rounded-2xl"
         >
-          <div className="relative backdrop-blur-2xl bg-white/70 border border-white/40 rounded-3xl shadow-2xl shadow-black/5 overflow-hidden">
-            {/* Noise texture overlay */}
-            <div className="absolute inset-0 opacity-20 mix-blend-overlay pointer-events-none">
-              <div className="w-full h-full bg-gradient-to-br from-transparent via-gray-100/30 to-transparent"></div>
-            </div>
-
-            <div className="relative p-8">
+          <div className="bg-white/80 backdrop-blur-xl border-white/20 shadow-2xl shadow-black/10 rounded-lg overflow-hidden">
+            <div className="p-6">
               {/* Header */}
-              <div className="text-center mb-8">
-                <motion.div
-                  initial={{ scale: 0.8, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  transition={{ delay: 0.1, duration: 0.3 }}
-                  className="w-16 h-16 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-purple-100/80 to-pink-100/80 border border-purple-200/60 shadow-lg flex items-center justify-center"
-                >
-                  <Edit3 className="w-8 h-8 text-purple-600" />
-                </motion.div>
-
-                <h2 className="text-2xl font-medium text-gray-900 mb-3 tracking-tight">
-                  목차 편집
-                </h2>
-                <p className="text-gray-600 text-sm font-normal leading-relaxed">
+              <div className="text-center mb-6">
+                <div className="flex items-center justify-center gap-2 mb-2">
+                  <Edit3 className="h-5 w-5 text-blue-600" />
+                  <h2 className="text-lg font-medium text-gray-900">
+                    목차 편집
+                  </h2>
+                </div>
+                <p className="text-sm text-gray-600">
                   드래그하여 순서 변경, 레벨 조정, 추가/삭제가 가능합니다
                 </p>
               </div>
 
               {/* Outline Editor */}
-              <motion.div
-                initial={{ y: 20, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ delay: 0.2, duration: 0.3 }}
-                className="mb-8"
-              >
-                <div className="bg-white/60 backdrop-blur-sm rounded-2xl border border-gray-200/60 p-6">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-sm font-medium text-gray-800">
+                    <Hash className="h-4 w-4 text-blue-600" />
+                    목차 편집
+                  </div>
+                  <button
+                    onClick={() => setEditableOutline([])}
+                    className="p-1.5 text-black hover:text-red-600 rounded transition-colors flex items-center gap-1"
+                    title="전체 삭제"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    <span className="text-sm">전체 삭제</span>
+                  </button>
+                </div>
+
+                <div className="bg-white/40 backdrop-blur-sm rounded-lg border border-white/30 p-4">
                   <DndContext
                     sensors={sensors}
                     collisionDetection={closestCenter}
@@ -312,7 +315,7 @@ export function OutlineEditModal({
                             onClick={() => handleAddOutlineItem(-1, 1)}
                             variant="outline"
                             size="sm"
-                            className="bg-white/80 border-gray-300/60 hover:bg-white/90"
+                            className="bg-white/60 hover:bg-white/70 text-gray-700 border border-white/30 backdrop-blur-sm"
                           >
                             <Plus className="h-4 w-4 mr-2" />첫 번째 항목 추가
                           </Button>
@@ -330,7 +333,7 @@ export function OutlineEditModal({
                             }
                             variant="outline"
                             size="sm"
-                            className="bg-white/80 border-gray-300/60 hover:bg-white/90 text-sm"
+                            className="bg-white/60 hover:bg-white/70 text-gray-700 border border-white/30 backdrop-blur-sm text-sm"
                           >
                             <Plus className="h-4 w-4 mr-2" />새 항목 추가
                           </Button>
@@ -347,30 +350,25 @@ export function OutlineEditModal({
                     <p>H1 (대제목), H2 (중제목), H3 (소제목)</p>
                   </div>
                 </div>
-              </motion.div>
+              </div>
 
               {/* Action Buttons */}
-              <motion.div
-                initial={{ y: 20, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ delay: 0.3, duration: 0.3 }}
-                className="flex items-center justify-between"
-              >
+              <div className="flex gap-3 mt-6 pt-4 border-t border-white/20">
                 <Button
-                  variant="ghost"
                   onClick={onClose}
-                  className="text-gray-500 hover:text-gray-700 hover:bg-white/50 font-normal text-sm px-4 py-2 rounded-xl flex items-center space-x-2"
+                  variant="outline"
+                  className="flex-1 bg-white/60 hover:bg-white/70 text-gray-700 border border-white/30 backdrop-blur-sm"
                 >
-                  <span>취소</span>
+                  취소
                 </Button>
 
                 <Button
                   onClick={handleSave}
-                  className="bg-black/90 hover:bg-black text-white font-medium text-sm px-6 py-2 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 backdrop-blur-sm"
+                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white shadow-sm"
                 >
                   저장
                 </Button>
-              </motion.div>
+              </div>
             </div>
           </div>
         </motion.div>

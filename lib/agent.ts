@@ -50,6 +50,12 @@ export interface ModificationProposalMessage {
   data: unknown;
 }
 
+// 목차 생성 결과 메시지 타입
+export interface IndexResultMessage {
+  type: "index_result";
+  data: unknown;
+}
+
 class AgentAI {
   private anthropic: Anthropic;
 
@@ -154,6 +160,12 @@ class AgentAI {
         completed: "제안 처리 완료!",
         failed: "제안 처리에 실패했어요.",
       },
+      generate_index: {
+        starting: "문서 목차를 생성하고 있어요...",
+        in_progress: "문서 구조를 분석하고 있습니다...",
+        completed: "목차 생성 완료!",
+        failed: "목차 생성에 실패했어요. 문서 내용이 부족하거나 요청이 모호할 수 있습니다.",
+      },
     };
 
     return (
@@ -204,6 +216,14 @@ class AgentAI {
               error: "수정 제안 응답 데이터가 필요합니다.",
             };
           }
+          break;
+
+        case "generate_index":
+          result = await executeAgentTool("generate_index", {
+            documentId,
+            userId,
+            userRequest: originalMessage,
+          });
           break;
 
         default:
@@ -399,7 +419,14 @@ class AgentAI {
       action: "approve" | "reject";
       customContent?: string;
     }
-  ): AsyncGenerator<string | ToolStatusMessage | ModificationProposalMessage, AgentResult, unknown> {
+  ): AsyncGenerator<
+    | string
+    | ToolStatusMessage
+    | ModificationProposalMessage
+    | IndexResultMessage,
+    AgentResult,
+    unknown
+  > {
     try {
       // 제안 응답 처리가 있는 경우 바로 처리
       if (proposalResponse) {
@@ -481,6 +508,19 @@ class AgentAI {
                 type: "modification_proposal",
                 data: modificationResult.data,
               } as ModificationProposalMessage;
+            }
+
+            // generate_index 도구 결과가 있으면 목차 생성 결과로 전달
+            const indexResult = toolResults.find(
+              (result) => result.toolName === "generate_index" && result.success
+            );
+
+            if (indexResult && indexResult.data) {
+              // 목차 생성 결과를 별도로 yield (스트림에서 처리하도록)
+              yield {
+                type: "index_result",
+                data: indexResult.data,
+              } as IndexResultMessage;
             }
           } else {
             // 도구 상태 메시지

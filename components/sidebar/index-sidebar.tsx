@@ -91,6 +91,28 @@ export function IndexSidebar({
     }
   }, [documentId]);
 
+  // 목차 업데이트 이벤트 리스너 추가
+  useEffect(() => {
+    const handleIndexUpdate = (event: CustomEvent) => {
+      const { documentId: updatedDocumentId, indexContent } = event.detail;
+
+      // 현재 문서의 목차 업데이트인지 확인
+      if (updatedDocumentId === documentId) {
+        setCurrentOutlineData(indexContent);
+        onOutlineChange?.(indexContent);
+      }
+    };
+
+    window.addEventListener("indexUpdated", handleIndexUpdate as EventListener);
+
+    return () => {
+      window.removeEventListener(
+        "indexUpdated",
+        handleIndexUpdate as EventListener
+      );
+    };
+  }, [documentId, onOutlineChange]);
+
   // 목차 데이터가 외부에서 변경될 때 반영
   useEffect(() => {
     setCurrentOutlineData(outlineData);
@@ -362,7 +384,12 @@ export function IndexSidebar({
           <div
             className={cn(
               "bg-white/40 transition-all duration-300 flex flex-col overflow-hidden",
-              isKnowledgeExpanded ? "max-h-[50%]" : "flex-none",
+              // 동적 높이 분배 로직
+              isKnowledgeExpanded && isIndexExpanded
+                ? "flex-1" // 둘 다 열려있으면 각각 flex-1
+                : isKnowledgeExpanded && !isIndexExpanded
+                ? "flex-1" // Knowledge만 열려있으면 전체 높이
+                : "flex-none", // 닫혀있으면 헤더만
               isDragOver &&
                 "bg-blue-50/80 border-2 border-dashed border-blue-300"
             )}
@@ -490,7 +517,12 @@ export function IndexSidebar({
           <div
             className={cn(
               "bg-white/40 flex flex-col overflow-hidden",
-              isIndexExpanded ? "max-h-[50%]" : "flex-none"
+              // 동적 높이 분배 로직
+              isKnowledgeExpanded && isIndexExpanded
+                ? "flex-1" // 둘 다 열려있으면 각각 flex-1
+                : !isKnowledgeExpanded && isIndexExpanded
+                ? "flex-1" // Index만 열려있으면 전체 높이
+                : "flex-none" // 닫혀있으면 헤더만
             )}
           >
             <div className="w-full p-4 flex items-center gap-2 flex-none">

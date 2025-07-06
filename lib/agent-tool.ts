@@ -7,6 +7,7 @@ import {
 } from "./liveblocks-utils";
 import {
   DOCUMENT_EDITING_PROMPT,
+  DOCUMENT_INDEX_GENERATION_PROMPT,
   PROMPT_SETTINGS,
   PromptBuilder,
 } from "./prompts";
@@ -37,6 +38,22 @@ export interface DocumentModificationResult {
     documentId: string;
     aiUserId: string;
     analyzedAt: string;
+  };
+}
+
+// generate_index 결과 타입
+export interface DocumentIndexResult {
+  indexContent: string;
+  indexItems: Array<{
+    level: number;
+    title: string;
+    description?: string;
+  }>;
+  metadata: {
+    documentId: string;
+    aiUserId: string;
+    generatedAt: string;
+    totalItems: number;
   };
 }
 
@@ -459,6 +476,174 @@ export async function getDocumentModifications(
   }
 }
 
+/**
+ * 에이전트 도구: 문서 목차 생성
+ * 현재 문서 내용을 분석하여 적절한 목차를 생성합니다
+ * @param documentId - 분석할 문서의 ID (Room ID와 동일)
+ * @param userId - 요청하는 사용자의 ID
+ * @param userRequest - 사용자의 목차 생성 요청 (문서가 비어있을 때 판단 근거로 사용)
+ * @returns 생성된 목차 정보
+ */
+export async function generateIndex(
+  documentId: string,
+  userId: string,
+  userRequest?: string
+): Promise<ToolResult<DocumentIndexResult>> {
+  try {
+    // 입력 검증
+    if (!documentId || typeof documentId !== "string") {
+      return {
+        success: false,
+        error: "문서 ID가 필요합니다.",
+      };
+    }
+
+    if (!userId || typeof userId !== "string") {
+      return {
+        success: false,
+        error: "사용자 ID가 필요합니다.",
+      };
+    }
+
+    // 문서 소유권 검증
+    const isOwner = await verifyDocumentOwnership(documentId, userId);
+
+    if (!isOwner) {
+      return {
+        success: false,
+        error: "문서에 접근할 권한이 없습니다.",
+      };
+    }
+
+    // AI 사용자 ID 생성
+    const aiUserId = createAIUserId(documentId);
+
+    try {
+      // Liveblocks Y.js 문서에서 실시간 내용 읽기
+      const content = await getDocumentContent(documentId);
+
+      // Anthropic API 초기화
+      const anthropic = new Anthropic({
+        apiKey: process.env.ANTHROPIC_API_KEY,
+      });
+
+      try {
+        // AI를 사용하여 목차 생성
+        const response = await anthropic.messages.create({
+          model: PROMPT_SETTINGS.DOCUMENT_EDITING.model,
+          max_tokens: PROMPT_SETTINGS.MAIN_RESPONSE.maxTokens,
+          system: DOCUMENT_INDEX_GENERATION_PROMPT,
+          messages: [
+            {
+              role: "user",
+              content: `다음 문서의 내용을 분석하여 적절한 목차를 생성해주세요:
+
+문서 내용:
+${content}
+
+사용자 요청: ${userRequest || "문서의 목차를 생성해주세요"}
+
+문서 내용 길이: ${content.length}자
+문서가 비어있거나 내용이 부족한 경우, 사용자 요청을 기반으로 목차 생성이 가능한지 판단해주세요.`,
+            },
+          ],
+          temperature: PROMPT_SETTINGS.DOCUMENT_EDITING.temperature,
+        });
+
+        const responseText =
+          response.content[0].type === "text" ? response.content[0].text : "";
+
+        try {
+          // 마크다운 코드 블록에서 JSON 추출
+          let jsonText = responseText.trim();
+
+          // ```json과 ``` 제거
+          if (jsonText.startsWith("```json")) {
+            jsonText = jsonText
+              .replace(/^```json\s*/, "")
+              .replace(/\s*```$/, "");
+          } else if (jsonText.startsWith("```")) {
+            jsonText = jsonText.replace(/^```\s*/, "").replace(/\s*```$/, "");
+          }
+
+          const indexResult = JSON.parse(jsonText);
+
+          // 거절 응답 처리
+          if (indexResult.rejected) {
+            return {
+              success: false,
+              error: `목차 생성이 적절하지 않습니다: ${indexResult.reason}`,
+            };
+          }
+
+          // 성공 응답 검증
+          if (!indexResult.indexContent || !indexResult.indexItems) {
+            return {
+              success: false,
+              error: "목차 생성 결과가 올바르지 않습니다.",
+            };
+          }
+
+          // indexItems 배열 검증
+          if (!Array.isArray(indexResult.indexItems)) {
+            return {
+              success: false,
+              error: "목차 항목이 올바른 형식이 아닙니다.",
+            };
+          }
+
+          const result = {
+            success: true,
+            data: {
+              indexContent: indexResult.indexContent,
+              indexItems: indexResult.indexItems,
+              metadata: {
+                documentId,
+                aiUserId,
+                generatedAt: new Date().toISOString(),
+                totalItems: indexResult.indexItems.length,
+              },
+            },
+          };
+
+          return result;
+        } catch (parseError) {
+          console.error("목차 생성 JSON 파싱 오류:", parseError);
+          console.error("원본 응답:", responseText);
+          return {
+            success: false,
+            error: "목차 생성 결과를 처리하는 중 오류가 발생했습니다.",
+          };
+        }
+      } catch (anthropicError) {
+        console.error("AI 처리 중 오류:", anthropicError);
+        return {
+          success: false,
+          error: "AI 처리 중 오류가 발생했습니다.",
+        };
+      }
+    } catch (liveblocksError) {
+      console.error("Liveblocks 오류:", liveblocksError);
+      return {
+        success: false,
+        error: `실시간 문서를 읽을 수 없습니다: ${
+          liveblocksError instanceof Error
+            ? liveblocksError.message
+            : "알 수 없는 오류"
+        }`,
+      };
+    }
+  } catch (error) {
+    console.error("목차 생성 중 오류:", error);
+    return {
+      success: false,
+      error: `목차 생성 중 오류가 발생했습니다: ${
+        error instanceof Error ? error.message : "알 수 없는 오류"
+      }`,
+    };
+  }
+}
+
 // 도구 목록 및 메타데이터 (process_modification_response 설명 업데이트)
 export const AGENT_TOOLS = {
   read_document: {
@@ -535,6 +720,28 @@ export const AGENT_TOOLS = {
     },
     function: processModificationResponse,
   },
+  generate_index: {
+    name: "generate_index",
+    description: "현재 문서의 내용을 분석하여 적절한 목차를 생성합니다.",
+    parameters: {
+      documentId: {
+        type: "string",
+        description: "분석할 문서의 ID",
+        required: true,
+      },
+      userId: {
+        type: "string",
+        description: "요청하는 사용자의 ID",
+        required: true,
+      },
+      userRequest: {
+        type: "string",
+        description: "사용자의 목차 생성 요청",
+        required: false,
+      },
+    },
+    function: generateIndex,
+  },
 } as const;
 
 // 도구 실행 헬퍼 함수 (update_document 케이스 제거)
@@ -607,6 +814,25 @@ export async function executeAgentTool(
           parameters.documentId,
           parameters.userId,
           parameters.response as UserModificationResponse
+        );
+
+      case "generate_index":
+        if (typeof parameters.documentId !== "string") {
+          return {
+            success: false,
+            error: "documentId는 문자열이어야 합니다.",
+          };
+        }
+        if (typeof parameters.userId !== "string") {
+          return {
+            success: false,
+            error: "userId는 문자열이어야 합니다.",
+          };
+        }
+        return await generateIndex(
+          parameters.documentId,
+          parameters.userId,
+          parameters.userRequest as string | undefined
         );
 
       default:

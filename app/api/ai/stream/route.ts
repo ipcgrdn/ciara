@@ -6,6 +6,7 @@ import {
   ToolStatusMessage,
   ModificationProposalMessage,
 } from "@/lib/agent";
+import { type DocumentIndexResult } from "@/lib/agent-tool";
 
 // 요청 바디 타입 정의
 interface RequestBody {
@@ -20,14 +21,32 @@ interface RequestBody {
   };
 }
 
+// 목차 생성 결과 메시지 타입
+interface IndexResultMessage {
+  type: "index_result";
+  data: DocumentIndexResult;
+}
+
 // 타입 가드 함수
-function isModificationProposal(chunk: unknown): chunk is ModificationProposalMessage {
+function isModificationProposal(
+  chunk: unknown
+): chunk is ModificationProposalMessage {
   return (
     typeof chunk === "object" &&
     chunk !== null &&
     "type" in chunk &&
     "data" in chunk &&
     (chunk as { type: string }).type === "modification_proposal"
+  );
+}
+
+function isIndexResult(chunk: unknown): chunk is IndexResultMessage {
+  return (
+    typeof chunk === "object" &&
+    chunk !== null &&
+    "type" in chunk &&
+    "data" in chunk &&
+    (chunk as { type: string }).type === "index_result"
   );
 }
 
@@ -126,6 +145,13 @@ export async function POST(request: NextRequest) {
               // 수정 제안 스트리밍
               const data = `data: ${JSON.stringify({
                 modificationProposal: chunk.data,
+              })}\n\n`;
+              controller.enqueue(new TextEncoder().encode(data));
+            } else if (isIndexResult(chunk)) {
+              // 목차 생성 결과 스트리밍
+              const indexResultChunk = chunk as IndexResultMessage;
+              const data = `data: ${JSON.stringify({
+                indexResult: indexResultChunk.data,
               })}\n\n`;
               controller.enqueue(new TextEncoder().encode(data));
             } else if (
