@@ -44,6 +44,12 @@ export interface ToolStatusMessage {
   message: string;
 }
 
+// 수정 제안 메시지 타입
+export interface ModificationProposalMessage {
+  type: "modification_proposal";
+  data: unknown;
+}
+
 class AgentAI {
   private anthropic: Anthropic;
 
@@ -393,7 +399,7 @@ class AgentAI {
       action: "approve" | "reject";
       customContent?: string;
     }
-  ): AsyncGenerator<string | ToolStatusMessage, AgentResult, unknown> {
+  ): AsyncGenerator<string | ToolStatusMessage | ModificationProposalMessage, AgentResult, unknown> {
     try {
       // 제안 응답 처리가 있는 경우 바로 처리
       if (proposalResponse) {
@@ -474,7 +480,7 @@ class AgentAI {
               yield {
                 type: "modification_proposal",
                 data: modificationResult.data,
-              } as any;
+              } as ModificationProposalMessage;
             }
           } else {
             // 도구 상태 메시지

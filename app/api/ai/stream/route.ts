@@ -4,6 +4,7 @@ import {
   AgentMessage,
   AgentResult,
   ToolStatusMessage,
+  ModificationProposalMessage,
 } from "@/lib/agent";
 
 // 요청 바디 타입 정의
@@ -17,6 +18,17 @@ interface RequestBody {
     feedback?: string;
     customContent?: string;
   };
+}
+
+// 타입 가드 함수
+function isModificationProposal(chunk: unknown): chunk is ModificationProposalMessage {
+  return (
+    typeof chunk === "object" &&
+    chunk !== null &&
+    "type" in chunk &&
+    "data" in chunk &&
+    (chunk as { type: string }).type === "modification_proposal"
+  );
 }
 
 export async function POST(request: NextRequest) {
@@ -110,19 +122,10 @@ export async function POST(request: NextRequest) {
                 },
               })}\n\n`;
               controller.enqueue(new TextEncoder().encode(data));
-            } else if (
-              typeof chunk === "object" &&
-              chunk !== null &&
-              "type" in chunk &&
-              (chunk as any).type === "modification_proposal"
-            ) {
+            } else if (isModificationProposal(chunk)) {
               // 수정 제안 스트리밍
-              const proposalData = chunk as unknown as {
-                type: "modification_proposal";
-                data: unknown;
-              };
               const data = `data: ${JSON.stringify({
-                modificationProposal: proposalData.data,
+                modificationProposal: chunk.data,
               })}\n\n`;
               controller.enqueue(new TextEncoder().encode(data));
             } else if (
