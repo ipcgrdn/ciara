@@ -181,6 +181,27 @@ export const AiSidebar = ({ className, documentId }: AiSidebarProps) => {
     setEditingTitle("");
   };
 
+  // 키보드 이벤트로 제목 편집 완료
+  const handleSaveTitleOnKeyboard = async (sessionId: string) => {
+    if (editingTitle.trim()) {
+      try {
+        const success = await ChatHistoryService.updateSessionTitle(
+          sessionId,
+          editingTitle.trim()
+        );
+
+        if (success) {
+          await loadChatHistory();
+        }
+      } catch (error) {
+        console.error("제목 업데이트 중 오류:", error);
+      }
+    }
+
+    setEditingSessionId(null);
+    setEditingTitle("");
+  };
+
   // 제목 편집 취소
   const handleCancelEdit = () => {
     setEditingSessionId(null);
@@ -371,7 +392,7 @@ export const AiSidebar = ({ className, documentId }: AiSidebarProps) => {
                                       }
                                       onKeyDown={(e) => {
                                         if (e.key === "Enter") {
-                                          handleSaveTitle(session.id, e as any);
+                                          handleSaveTitleOnKeyboard(session.id);
                                         } else if (e.key === "Escape") {
                                           handleCancelEdit();
                                         }
