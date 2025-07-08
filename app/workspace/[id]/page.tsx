@@ -1,10 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Editor } from "@/components/document/editor";
 import { Navbar } from "@/components/document/navbar";
 import { Toolbar } from "@/components/document/toolbar";
-import { Room } from "@/components/document/room";
 import { IndexSidebar } from "@/components/sidebar/index-sidebar";
 import { AiSidebar } from "@/components/sidebar/ai-sidebar";
 import { useAuth } from "@/contexts/AuthContext";
@@ -15,33 +14,24 @@ import {
   updateDocument,
   type Document,
 } from "@/lib/documents";
-import { useEditorStore } from "@/store/use-editor-store";
 import { Loader2Icon } from "lucide-react";
+import { useEditorStore } from "@/store/use-editor-store";
 
 export default function DocumentPage() {
   const { user, loading } = useAuth();
   const params = useParams();
   const router = useRouter();
   const documentId = params.id as string;
+  const { editor } = useEditorStore();
 
   const [document, setDocument] = useState<Document | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  const [lastSyncTime, setLastSyncTime] = useState<number>(0);
 
-  // Unicode 안전한 간단한 해시 함수
-  const getContentHash = (content: string): number => {
-    let hash = 0;
-    if (content.length === 0) return hash;
-
-    for (let i = 0; i < content.length; i++) {
-      const char = content.charCodeAt(i);
-      hash = (hash << 5) - hash + char;
-      hash = hash & hash; // 32비트 정수로 변환
-    }
-
-    return Math.abs(hash);
-  };
+  // 자동 저장을 위한 상태
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [lastSavedContent, setLastSavedContent] = useState("");
 
   // 사이드바 표시 상태 관리
   const [showIndexSidebar, setShowIndexSidebar] = useState(() => {
@@ -80,6 +70,122 @@ export default function DocumentPage() {
     }
   };
 
+  // 문서 내용 자동 저장 함수
+  const saveDocumentContent = useCallback(
+    async (content: string) => {
+      if (!document || !user || content === lastSavedContent) return;
+
+      try {
+        setIsSaving(true);
+        await updateDocument(document.id, { content });
+        setLastSavedContent(content);
+        setHasUnsavedChanges(false);
+      } catch (error) {
+        console.error("문서 내용 저장 실패:", error);
+      } finally {
+        setIsSaving(false);
+      }
+    },
+    [document, user, lastSavedContent]
+  );
+
+  // 디바운스된 자동 저장
+  const debouncedSave = useCallback(
+    (content: string) => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+
+      setHasUnsavedChanges(true);
+
+      // 2초 후 자동 저장
+      saveTimeoutRef.current = setTimeout(() => {
+        saveDocumentContent(content);
+      }, 2000);
+    },
+    [saveDocumentContent]
+  );
+
+  // 에디터 내용 변경 감지
+  useEffect(() => {
+    if (!editor) return;
+
+    const handleUpdate = () => {
+      const content = editor.getHTML();
+      debouncedSave(content);
+    };
+
+    // 에디터 업데이트 이벤트 리스너 등록
+    editor.on("update", handleUpdate);
+
+    return () => {
+      editor.off("update", handleUpdate);
+    };
+  }, [editor, debouncedSave]);
+
+  // 컴포넌트 언마운트 시 마지막 저장
+  useEffect(() => {
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+      // 저장되지 않은 변경사항이 있으면 즉시 저장
+      if (hasUnsavedChanges && editor && document) {
+        const content = editor.getHTML();
+        updateDocument(document.id, { content }).catch(console.error);
+      }
+    };
+  }, [hasUnsavedChanges, editor, document]);
+
+  // 수동 저장 함수 (Ctrl/Cmd + S)
+  const handleManualSave = useCallback(async () => {
+    if (!editor || !document) return;
+
+    // 진행중인 자동 저장 취소
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+      saveTimeoutRef.current = null;
+    }
+
+    const content = editor.getHTML();
+    await saveDocumentContent(content);
+  }, [editor, document, saveDocumentContent]);
+
+  // 키보드 단축키 이벤트 리스너
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      // Ctrl+S (Windows) 또는 Cmd+S (Mac)
+      if ((event.ctrlKey || event.metaKey) && event.key === "s") {
+        event.preventDefault();
+        handleManualSave();
+      }
+    };
+
+    window.document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      window.document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [handleManualSave]);
+
+  // 페이지를 벗어날 때 저장되지 않은 변경사항 경고
+  useEffect(() => {
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      if (hasUnsavedChanges) {
+        event.preventDefault();
+        event.returnValue =
+          "저장되지 않은 변경사항이 있습니다. 정말 떠나시겠습니까?";
+        return event.returnValue;
+      }
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, [hasUnsavedChanges]);
+
   // 문서 로드
   const loadDocument = async () => {
     if (!user || !documentId) return;
@@ -90,20 +196,22 @@ export default function DocumentPage() {
 
       if (existingDoc) {
         setDocument(existingDoc);
-        // 기존 문서 로드 시 초기 해시 설정 (Supabase 내용 기준)
-        if (existingDoc.content) {
-          const contentHash = getContentHash(existingDoc.content);
-          setLastSyncTime(contentHash);
+        setLastSavedContent(existingDoc.content || "");
+
+        // 에디터에 내용 로드
+        if (editor && existingDoc.content) {
+          editor.commands.setContent(existingDoc.content);
         }
       } else {
-        // 문서가 없으면 새로 생성 (빈 내용으로 시작)
+        // 문서가 없으면 새로 생성
         const newDoc = await createDocument({
           id: documentId,
           title: "새 문서",
-          content: "", // 빈 내용으로 시작, Liveblocks가 실제 내용 관리
+          content: "", // 빈 내용으로 시작
           user_id: user.id,
         });
         setDocument(newDoc);
+        setLastSavedContent("");
       }
     } catch (error) {
       console.error("문서 로드 실패:", error);
@@ -129,33 +237,6 @@ export default function DocumentPage() {
     }
   };
 
-  // 백그라운드 동기화: Liveblocks → Supabase
-  const syncToSupabase = async () => {
-    if (!document || !user) return;
-
-    try {
-      // Editor store에서 현재 편집기 인스턴스 가져오기
-      const editor = useEditorStore.getState().editor;
-      if (!editor) return;
-
-      // Liveblocks에서 현재 문서 내용 가져오기
-      const content = editor.getHTML();
-
-      // 내용이 비어있지 않고, 이전 동기화와 다른 경우에만 동기화
-      if (content && content.trim() !== "<p></p>" && content.trim() !== "") {
-        // 문서 내용이 변경되었는지 확인
-        const contentHash = getContentHash(content);
-
-        if (contentHash !== lastSyncTime) {
-          await updateDocument(document.id, { content });
-          setLastSyncTime(contentHash);
-        }
-      }
-    } catch (error) {
-      console.error("❌ 백그라운드 동기화 실패:", error);
-    }
-  };
-
   // 사용자 인증 체크
   useEffect(() => {
     if (!loading && !user) {
@@ -170,48 +251,15 @@ export default function DocumentPage() {
     }
   }, [user, documentId]);
 
-  // 주기적 백그라운드 동기화
+  // 에디터가 준비되고 문서가 로드되면 내용 설정
   useEffect(() => {
-    if (!document || !user) return;
-
-    // 초기 동기화 (10초 후 - 에디터 로드 완료 후)
-    const initialSync = setTimeout(() => {
-      syncToSupabase();
-    }, 10 * 1000);
-
-    // 주기적 동기화 (3분마다)
-    const syncInterval = setInterval(() => {
-      syncToSupabase();
-    }, 3 * 60 * 1000);
-
-    // 페이지 종료 시 마지막 동기화
-    const handleBeforeUnload = () => {
-      syncToSupabase();
-    };
-
-    // 페이지 비활성화 시 동기화 (다른 탭으로 이동 등)
-    const handleVisibilityChange = () => {
-      if (globalThis.document.hidden) {
-        syncToSupabase();
+    if (editor && document && !isLoading) {
+      if (document.content && document.content !== editor.getHTML()) {
+        editor.commands.setContent(document.content);
+        setLastSavedContent(document.content);
       }
-    };
-
-    window.addEventListener("beforeunload", handleBeforeUnload);
-    globalThis.document.addEventListener(
-      "visibilitychange",
-      handleVisibilityChange
-    );
-
-    return () => {
-      clearTimeout(initialSync);
-      clearInterval(syncInterval);
-      window.removeEventListener("beforeunload", handleBeforeUnload);
-      globalThis.document.removeEventListener(
-        "visibilitychange",
-        handleVisibilityChange
-      );
-    };
-  }, [document, user]);
+    }
+  }, [editor, document, isLoading]);
 
   // 로딩 상태 또는 인증되지 않은 경우
   if (loading || isLoading || !user || !document) {
@@ -231,7 +279,7 @@ export default function DocumentPage() {
         <Navbar
           document={document}
           updateTitle={updateDocumentMetadata}
-          isSaving={isSaving}
+          isSaving={isSaving || hasUnsavedChanges}
           showIndexSidebar={showIndexSidebar}
           showAiSidebar={showAiSidebar}
           onToggleIndexSidebar={toggleIndexSidebar}
@@ -251,9 +299,7 @@ export default function DocumentPage() {
 
         {/* 중앙 에디터 영역 */}
         <div className="flex-1 min-w-0">
-          <Room roomId={params.id as string}>
-            <Editor />
-          </Room>
+          <Editor />
         </div>
 
         {/* 오른쪽 AI 사이드바 */}

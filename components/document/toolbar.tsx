@@ -9,7 +9,6 @@ import {
   BoldIcon,
   ItalicIcon,
   UnderlineIcon,
-  MessageSquarePlusIcon,
   ListTodoIcon,
   RemoveFormattingIcon,
   ChevronDownIcon,
@@ -657,14 +656,6 @@ export const Toolbar = () => {
       },
     ],
     [
-      {
-        label: "Comment",
-        icon: MessageSquarePlusIcon,
-        onClick: () => {
-          editor?.chain().focus().addPendingComment().run();
-        },
-        isActive: editor?.isActive("liveblocksCommentMark"),
-      },
       {
         label: "List Todo",
         icon: ListTodoIcon,

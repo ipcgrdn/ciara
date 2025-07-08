@@ -11,12 +11,6 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  turbopack: {
-    resolveAlias: {
-      // Yjs 중복 import 문제 해결
-      yjs: "yjs",
-    },
-  },
 };
 
 export default nextConfig;

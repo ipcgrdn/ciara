@@ -329,19 +329,7 @@ export default function DashboardPage() {
     user.user_metadata?.name || user.user_metadata?.full_name || user.email;
 
   return (
-    <main className="min-h-screen bg-white">
-      <div className="absolute inset-0 invert opacity-10">
-        <div className="absolute inset-0">
-          <Image
-            src="/assets/background.svg"
-            alt="Background"
-            fill
-            className="object-cover filter grayscale"
-            priority
-          />
-        </div>
-      </div>
-
+    <main className="min-h-screen bg-white">  
       {/* Navigation */}
       <nav className="border-b border-gray-100/50 sticky top-0 z-40 backdrop-blur-xl bg-transparent">
         <div className="max-w-6xl mx-auto px-6 lg:px-8">
@@ -484,14 +472,14 @@ export default function DashboardPage() {
           transition={{ duration: 0.6, delay: 0.1 }}
           className="mb-16"
         >
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* New Document Button */}
             <button
               onClick={createNewDocument}
-              className="group flex items-center justify-between bg-white/50 backdrop-blur-sm border border-gray-200/50 rounded-2xl p-6 hover:bg-white/80 hover:border-gray-300/50 transition-all duration-300 hover:shadow-lg"
+              className="group flex items-center justify-between bg-white/50 backdrop-blur-sm border border-gray-300 rounded-2xl p-6 hover:bg-white/80 hover:border-gray-400 transition-all duration-300 hover:shadow-lg"
             >
               <div className="flex items-center space-x-4">
-                <div className="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                <div className="w-10 h-10 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
                   <PlusIcon className="h-5 w-5 text-gray-700" />
                 </div>
                 <div className="text-left">
@@ -507,9 +495,9 @@ export default function DashboardPage() {
             </button>
 
             {/* Secondary Actions */}
-            <button className="group flex items-center justify-between bg-white/50 backdrop-blur-sm border border-gray-200/50 rounded-2xl p-6 hover:bg-white/80 hover:border-gray-300/50 transition-all duration-300 hover:shadow-lg">
+            <button className="group flex items-center justify-between bg-white/50 backdrop-blur-sm border border-gray-300 rounded-2xl p-6 hover:bg-white/80 hover:border-gray-400 transition-all duration-300 hover:shadow-lg">
               <div className="flex items-center space-x-4">
-                <div className="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                <div className="w-10 h-10 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
                   <ArrowUpTrayIcon className="h-5 w-5 text-gray-700" />
                 </div>
                 <div className="text-left">
@@ -518,24 +506,6 @@ export default function DashboardPage() {
                   </h3>
                   <p className="text-sm text-gray-600">
                     작업하시던 문서가 있나요?
-                  </p>
-                </div>
-              </div>
-              <ChevronRightIcon className="h-5 w-5 text-gray-400 group-hover:text-gray-700 group-hover:translate-x-1 transition-all duration-300" />
-            </button>
-
-            {/* Templates Card */}
-            <button className="group flex items-center justify-between bg-white/50 backdrop-blur-sm border border-gray-200/50 rounded-2xl p-6 hover:bg-white/80 hover:border-gray-300/50 transition-all duration-300 hover:shadow-lg">
-              <div className="flex items-center space-x-4">
-                <div className="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                  <FolderIcon className="h-5 w-5 text-gray-700" />
-                </div>
-                <div className="text-left">
-                  <h3 className="text-lg font-semibold font-montserrat text-black">
-                    템플릿 살펴보기
-                  </h3>
-                  <p className="text-sm text-gray-600">
-                    문서 템플릿으로 빠르게 시작하세요
                   </p>
                 </div>
               </div>
@@ -559,7 +529,7 @@ export default function DashboardPage() {
           {!isLoadingDocuments && documents.length === 0 ? (
             /* Empty State */
             <div className="flex flex-col items-center justify-center py-20 bg-white/30 backdrop-blur-sm border border-gray-200/50 rounded-2xl">
-              <div className="w-16 h-16 bg-gray-50 rounded-2xl flex items-center justify-center mb-4">
+              <div className="w-16 h-16 flex items-center justify-center mb-4">
                 <DocumentTextIcon className="w-8 h-8 text-gray-400" />
               </div>
               <h3 className="text-lg font-semibold font-montserrat text-black mb-2">
@@ -578,20 +548,20 @@ export default function DashboardPage() {
             </div>
           ) : (
             /* Document List */
-            <div className="space-y-3">
+            <div className="space-y-3 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {documents.map((doc: Document, index: number) => (
                 <motion.div
                   key={doc.id}
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.3, delay: 0.05 * index }}
-                  className={`group flex items-center justify-between bg-white/50 backdrop-blur-sm border border-gray-200/50 rounded-xl p-4 hover:bg-white/80 hover:border-gray-300/50 transition-all duration-300 cursor-pointer ${
+                  className={`group flex items-center justify-between bg-white/50 backdrop-blur-sm border border-gray-300 rounded-xl p-4 hover:bg-white/80 hover:border-gray-400 transition-all duration-300 cursor-pointer ${
                     documentMenuOpen === doc.id ? "z-[9999]" : "z-10"
                   }`}
                   onClick={() => handleDocumentClick(doc.id)}
                 >
                   <div className="flex items-center space-x-4 flex-1">
-                    <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
+                    <div className="w-8 h-8 flex items-center justify-center">
                       <DocumentTextIcon className="h-4 w-4 text-gray-600" />
                     </div>
 
@@ -621,11 +591,7 @@ export default function DashboardPage() {
                         </h4>
                       )}
 
-                      <div className="flex items-center space-x-4 mt-1">
-                        <p className="text-xs text-gray-500 truncate max-w-md hidden md:block">
-                          {stripHtmlAndMarkdown(doc.content) ||
-                            ""}
-                        </p>
+                      <div className="flex mt-1">
                         <div className="flex items-center text-xs text-gray-400">
                           <ClockIcon className="h-3 w-3 mr-1" />
                           <span>{formatLastModified(doc.last_modified)}</span>
@@ -646,7 +612,6 @@ export default function DashboardPage() {
                       <EllipsisVerticalIcon className="h-4 w-4 text-gray-500" />
                     </button>
 
-                    {/* Dropdown Menu - 새로운 포탈 기반 컴포넌트 */}
                     <DropdownMenu documentId={doc.id} doc={doc} />
                   </div>
                 </motion.div>

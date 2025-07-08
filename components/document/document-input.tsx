@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { BsCloudCheck } from "react-icons/bs";
+import { Loader2Icon } from "lucide-react";
 import { type Document } from "@/lib/documents";
 import { cn } from "@/lib/utils";
 
@@ -57,6 +58,25 @@ export const DocumentInput = ({
     }
   }, [isEditing]);
 
+  // 저장 상태에 따른 아이콘과 메시지
+  const getSaveStatus = () => {
+    if (isSaving) {
+      return {
+        icon: <Loader2Icon className="w-4 h-4 animate-spin" />,
+        text: "저장 중...",
+        color: "text-slate-600",
+      };
+    }
+
+    return {
+      icon: <BsCloudCheck className="w-4 h-4" />,
+      text: "저장됨",
+      color: "text-green-600",
+    };
+  };
+
+  const saveStatus = getSaveStatus();
+
   return (
     <div className="flex items-center gap-2">
       {isEditing ? (
@@ -67,19 +87,26 @@ export const DocumentInput = ({
           onChange={(e) => setTitle(e.target.value)}
           onKeyDown={handleKeyDown}
           onBlur={handleBlur}
-          className="text-lg px-1.5 cursor-text bg-transparent border-b border-gray-300 focus:outline-none focus:border-gray-300 min-w-[200px]"
+          className="text-lg px-1.5 cursor-text bg-transparent border-b border-gray-300 focus:outline-none focus:border-gray-500 min-w-[200px]"
         />
       ) : (
         <span
-          className="text-lg px-1.5 cursor-pointer truncate hover:bg-gray-100 rounded"
+          className="text-lg px-1.5 cursor-pointer truncate hover:bg-gray-100 rounded transition-colors"
           onClick={handleTitleClick}
         >
           {document.title}
         </span>
       )}
-      <BsCloudCheck
-        className={cn("text-green-600", isSaving && "text-gray-300")}
-      />
+
+      {/* 저장 상태 표시 */}
+      <div
+        className="flex items-center gap-1 px-2 rounded-lg bg-gray-50/80 transition-all duration-200"
+        title={saveStatus.text}
+      >
+        <span className={cn("transition-colors", saveStatus.color)}>
+          {saveStatus.icon}
+        </span>
+      </div>
     </div>
   );
 };

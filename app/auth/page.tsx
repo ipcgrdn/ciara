@@ -167,42 +167,6 @@ export default function AuthPage() {
                       )}
                     </Button>
 
-                    {/* Features List */}
-                    <motion.div
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.8, delay: 0.6 }}
-                      className="space-y-3 pt-4 border-t border-white/10"
-                    >
-                      <p className="text-white/60 text-xs text-center mb-4">
-                        What you&apos;ll get with CIARA:
-                      </p>
-                      <div className="space-y-2">
-                        {[
-                          "Infinite context understanding",
-                          "Real-time collaborative editing",
-                          "Academic writing support",
-                          "Long-form document assistance",
-                        ].map((feature, index) => (
-                          <motion.div
-                            key={feature}
-                            initial={{ opacity: 0, x: -10 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{
-                              duration: 0.4,
-                              delay: 0.7 + index * 0.1,
-                            }}
-                            className="flex items-center space-x-3"
-                          >
-                            <div className="w-1.5 h-1.5 bg-gradient-to-r from-blue-400 to-white rounded-full" />
-                            <span className="text-white/80 text-sm">
-                              {feature}
-                            </span>
-                          </motion.div>
-                        ))}
-                      </div>
-                    </motion.div>
-
                     <div className="text-center text-xs text-white/40 pt-4">
                       By signing in, you agree to our{" "}
                       <Link
