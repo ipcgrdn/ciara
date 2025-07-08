@@ -10,12 +10,14 @@ interface DocumentInputProps {
   document: Document;
   updateTitle: (title: string) => Promise<void>;
   isSaving: boolean;
+  onManualSave?: () => Promise<void>;
 }
 
 export const DocumentInput = ({
   document,
   updateTitle,
   isSaving,
+  onManualSave,
 }: DocumentInputProps) => {
   const [isEditing, setIsEditing] = useState(false);
   const [title, setTitle] = useState(document.title);
@@ -100,8 +102,9 @@ export const DocumentInput = ({
 
       {/* 저장 상태 표시 */}
       <div
-        className="flex items-center gap-1 px-2 rounded-lg bg-gray-50/80 transition-all duration-200"
+        className="flex items-center gap-1 px-2 rounded-lg bg-gray-50/80 transition-all duration-200 cursor-pointer hover:bg-gray-100/80"
         title={saveStatus.text}
+        onClick={onManualSave}
       >
         <span className={cn("transition-colors", saveStatus.color)}>
           {saveStatus.icon}

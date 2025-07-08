@@ -284,6 +284,7 @@ export default function DocumentPage() {
           showAiSidebar={showAiSidebar}
           onToggleIndexSidebar={toggleIndexSidebar}
           onToggleAiSidebar={toggleAiSidebar}
+          onManualSave={handleManualSave}
         />
         <Toolbar />
       </div>

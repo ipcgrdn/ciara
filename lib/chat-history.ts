@@ -272,6 +272,34 @@ export class ChatHistoryService {
   }
 
   /**
+   * 세션 제목 업데이트
+   */
+  static async updateSessionTitle(
+    sessionId: string,
+    newTitle: string
+  ): Promise<boolean> {
+    try {
+      const { error } = await supabase
+        .from("chat_sessions")
+        .update({
+          title: newTitle,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", sessionId);
+
+      if (error) {
+        console.error("Error updating session title:", error);
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error("Error updating session title:", error);
+      return false;
+    }
+  }
+
+  /**
    * 세션 삭제
    */
   static async deleteSession(sessionId: string): Promise<boolean> {

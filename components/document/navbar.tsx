@@ -20,6 +20,7 @@ interface NavbarProps {
   showAiSidebar: boolean;
   onToggleIndexSidebar: () => void;
   onToggleAiSidebar: () => void;
+  onManualSave?: () => Promise<void>;
 }
 
 export const Navbar = ({
@@ -30,6 +31,7 @@ export const Navbar = ({
   showAiSidebar,
   onToggleIndexSidebar,
   onToggleAiSidebar,
+  onManualSave,
 }: NavbarProps) => {
   const { user, signOut } = useAuth();
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
@@ -73,6 +75,7 @@ export const Navbar = ({
         document={document}
         updateTitle={updateTitle}
         isSaving={isSaving}
+        onManualSave={onManualSave}
       />
 
       {/* Profile Section with Sidebar Toggles */}

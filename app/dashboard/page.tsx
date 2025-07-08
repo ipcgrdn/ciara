@@ -10,7 +10,6 @@ import { createPortal } from "react-dom";
 import {
   PlusIcon,
   Cog6ToothIcon,
-  FolderIcon,
   UserIcon,
   EllipsisVerticalIcon,
   PencilIcon,
@@ -29,40 +28,6 @@ import {
   formatLastModified,
   type Document,
 } from "@/lib/documents";
-
-// HTML/마크다운 태그를 제거하고 순수 텍스트만 추출하는 함수
-function stripHtmlAndMarkdown(text: string): string {
-  if (!text) return "";
-
-  return (
-    text
-      // HTML 태그 제거
-      .replace(/<[^>]*>/g, "")
-      // 마크다운 링크 제거 [텍스트](링크) -> 텍스트
-      .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
-      // 마크다운 이미지 제거 ![alt](src)
-      .replace(/!\[([^\]]*)\]\([^)]+\)/g, "")
-      // 마크다운 헤더 제거 # ## ###
-      .replace(/^#{1,6}\s+/gm, "")
-      // 마크다운 굵은 글씨 제거 **텍스트** -> 텍스트
-      .replace(/\*\*([^*]+)\*\*/g, "$1")
-      // 마크다운 기울임 제거 *텍스트* -> 텍스트
-      .replace(/\*([^*]+)\*/g, "$1")
-      // 마크다운 코드 블록 제거 ```코드```
-      .replace(/```[\s\S]*?```/g, "")
-      // 인라인 코드 제거 `코드`
-      .replace(/`([^`]+)`/g, "$1")
-      // 마크다운 인용구 제거 > 텍스트
-      .replace(/^>\s+/gm, "")
-      // 마크다운 리스트 제거 - 텍스트, * 텍스트
-      .replace(/^[-*+]\s+/gm, "")
-      // 숫자 리스트 제거 1. 텍스트
-      .replace(/^\d+\.\s+/gm, "")
-      // 과도한 공백 제거
-      .replace(/\s+/g, " ")
-      .trim()
-  );
-}
 
 export default function DashboardPage() {
   const { user, loading, signOut } = useAuth();
