@@ -22,6 +22,16 @@ import {
 import { Loader2Icon } from "lucide-react";
 import Image from "next/image";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   getUserDocuments,
   updateDocument,
   deleteDocument,
@@ -41,6 +51,10 @@ export default function DashboardPage() {
   const [editingTitle, setEditingTitle] = useState("");
   const [documentMenuOpen, setDocumentMenuOpen] = useState<string | null>(null);
   const [menuPosition, setMenuPosition] = useState({ x: 0, y: 0 });
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [documentToDelete, setDocumentToDelete] = useState<Document | null>(
+    null
+  );
   const menuButtonRefs = useRef<{ [key: string]: HTMLButtonElement | null }>(
     {}
   );
@@ -105,20 +119,32 @@ export default function DashboardPage() {
     setEditingTitle("");
   };
 
-  // 문서 삭제
-  const handleDeleteDocument = async (documentId: string) => {
-    if (!confirm("정말로 이 문서를 삭제하시겠습니까?")) {
-      return;
-    }
+  // 문서 삭제 대화상자 열기
+  const openDeleteDialog = (doc: Document) => {
+    setDocumentToDelete(doc);
+    setDeleteDialogOpen(true);
+    setDocumentMenuOpen(null);
+  };
+
+  // 문서 삭제 확인
+  const confirmDeleteDocument = async () => {
+    if (!documentToDelete) return;
 
     try {
-      await deleteDocument(documentId);
+      await deleteDocument(documentToDelete.id);
       await loadDocuments(); // 문서 목록 새로고침
     } catch (error) {
       console.error("문서 삭제 실패:", error);
     } finally {
-      setDocumentMenuOpen(null);
+      setDeleteDialogOpen(false);
+      setDocumentToDelete(null);
     }
+  };
+
+  // 문서 삭제 취소
+  const cancelDeleteDocument = () => {
+    setDeleteDialogOpen(false);
+    setDocumentToDelete(null);
   };
 
   // 문서 카드 클릭 (편집 모드가 아닐 때만)
@@ -262,7 +288,7 @@ export default function DashboardPage() {
             className="w-full flex items-center space-x-3 px-4 py-3 text-sm text-red-600 hover:bg-red-50/80 transition-colors rounded-b-xl"
             onClick={(e) => {
               e.stopPropagation();
-              handleDeleteDocument(doc.id);
+              openDeleteDialog(doc);
             }}
           >
             <TrashIcon className="h-4 w-4" />
@@ -294,7 +320,7 @@ export default function DashboardPage() {
     user.user_metadata?.name || user.user_metadata?.full_name || user.email;
 
   return (
-    <main className="min-h-screen bg-white">  
+    <main className="min-h-screen bg-white">
       {/* Navigation */}
       <nav className="border-b border-gray-100/50 sticky top-0 z-40 backdrop-blur-xl bg-transparent">
         <div className="max-w-6xl mx-auto px-6 lg:px-8">
@@ -513,7 +539,7 @@ export default function DashboardPage() {
             </div>
           ) : (
             /* Document List */
-            <div className="space-y-3 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {documents.map((doc: Document, index: number) => (
                 <motion.div
                   key={doc.id}
@@ -585,6 +611,41 @@ export default function DashboardPage() {
           )}
         </motion.div>
       </div>
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent className="sm:max-w-md bg-white/80 rounded-2xl backdrop-blur-xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-lg font-semibold text-gray-900">
+              문서를 삭제하시겠습니까?
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-sm text-gray-600">
+              {documentToDelete && (
+                <>
+                  <span className="font-semibold">
+                    "{documentToDelete.title}"
+                  </span>{" "}
+                  문서가 영구적으로 삭제됩니다.
+                  <br />이 작업은 되돌릴 수 없습니다.
+                </>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex gap-2">
+            <AlertDialogCancel
+              onClick={cancelDeleteDocument}
+              className="bg-gray-100 text-gray-900 hover:bg-gray-200"
+            >
+              취소
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDeleteDocument}
+              className="bg-red-600 text-white hover:bg-red-700"
+            >
+              삭제
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </main>
   );
 }

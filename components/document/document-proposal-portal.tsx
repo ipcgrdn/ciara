@@ -113,7 +113,6 @@ export const DocumentProposalPortal = ({
             {/* 중간 패널 - 정보 및 액션 */}
             <div className="flex flex-col items-center justify-center">
               {/* 문서 정보 */}
-
               <div className="flex flex-col items-center justify-center gap-2">
                 <p className="text-lg text-gray-900 font-bold">
                   {documentTitle}
@@ -199,6 +198,62 @@ export const DocumentProposalPortal = ({
   );
 };
 
+// HTML을 텍스트로 변환하는 헬퍼 함수
+const htmlToText = (html: string): string => {
+  // 임시 DOM 요소를 만들어서 HTML을 파싱
+  const temp = document.createElement("div");
+  temp.innerHTML = html;
+
+  // 기본적인 HTML 태그들을 마크다운 형식으로 변환
+  const processNode = (node: Node): string => {
+    if (node.nodeType === Node.TEXT_NODE) {
+      return node.textContent || "";
+    }
+
+    if (node.nodeType === Node.ELEMENT_NODE) {
+      const element = node as Element;
+      const children = Array.from(element.childNodes).map(processNode).join("");
+
+      switch (element.tagName?.toLowerCase()) {
+        case "h1":
+          return `# ${children}\n\n`;
+        case "h2":
+          return `## ${children}\n\n`;
+        case "h3":
+          return `### ${children}\n\n`;
+        case "p":
+          return `${children}\n\n`;
+        case "strong":
+        case "b":
+          return `**${children}**`;
+        case "em":
+        case "i":
+          return `*${children}*`;
+        case "br":
+          return "\n";
+        case "ul":
+          return `${children}\n`;
+        case "ol":
+          return `${children}\n`;
+        case "li":
+          return `- ${children}\n`;
+        case "blockquote":
+          return `> ${children}\n\n`;
+        case "code":
+          return `\`${children}\``;
+        case "pre":
+          return `\`\`\`\n${children}\n\`\`\`\n\n`;
+        default:
+          return children;
+      }
+    }
+
+    return "";
+  };
+
+  return processNode(temp).trim();
+};
+
 // 에디터 스타일 뷰어 컴포넌트
 const EditorViewer = ({
   content,
@@ -208,118 +263,205 @@ const EditorViewer = ({
   content: string;
   isEmpty?: boolean;
   className?: string;
-}) => (
-  <div
-    className={cn(
-      "bg-gradient-to-br from-gray-50/50 to-white/50 overflow-y-auto",
-      className
-    )}
-  >
-    <div className="h-full overflow-auto p-4">
-      <div className="max-w-none mx-auto">
-        {/* 에디터와 동일한 스타일 적용 */}
-        <div
-          className="bg-white border border-gray-200 rounded-lg min-h-[600px] w-full p-6 shadow-sm"
-          style={{
-            fontFamily:
-              '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
-            fontSize: "14px",
-            lineHeight: "1.6",
-            color: "rgba(55, 53, 47, 1)",
-          }}
-        >
-          {isEmpty ? (
-            <div className="flex flex-col items-center justify-center h-64 text-gray-400">
-              <FileText className="w-16 h-16 mb-4 opacity-30" />
-              <p className="text-lg font-medium">문서가 비어있습니다</p>
-              <p className="text-sm">아직 작성된 내용이 없습니다.</p>
-            </div>
-          ) : (
-            <div className="prose prose-sm max-w-none">
-              <ReactMarkdown
-                components={{
-                  h1: ({ children }) => (
-                    <h1 className="text-2xl font-bold mb-4 mt-8 first:mt-0 text-gray-900">
-                      {children}
-                    </h1>
-                  ),
-                  h2: ({ children }) => (
-                    <h2 className="text-xl font-semibold mb-3 mt-6 text-gray-900">
-                      {children}
-                    </h2>
-                  ),
-                  h3: ({ children }) => (
-                    <h3 className="text-lg font-medium mb-2 mt-4 text-gray-900">
-                      {children}
-                    </h3>
-                  ),
-                  p: ({ children }) => (
-                    <p className="mb-3 text-gray-700 leading-relaxed">
-                      {children}
-                    </p>
-                  ),
-                  ul: ({ children }) => (
-                    <ul className="list-none pl-6 mb-4 space-y-1">
-                      {children}
-                    </ul>
-                  ),
-                  ol: ({ children }) => (
-                    <ol className="list-decimal pl-6 mb-4 space-y-1">
-                      {children}
-                    </ol>
-                  ),
-                  li: ({ children }) => (
-                    <li className="relative text-gray-700 leading-relaxed">
-                      <span className="absolute -left-4 top-0 text-gray-400">
-                        •
-                      </span>
-                      {children}
-                    </li>
-                  ),
-                  blockquote: ({ children }) => (
-                    <blockquote className="border-l-4 border-gray-300 pl-4 my-4 italic text-gray-600">
-                      {children}
-                    </blockquote>
-                  ),
-                  code: ({ children }) => (
-                    <code className="bg-gray-100 px-2 py-1 rounded text-sm font-mono text-gray-800">
-                      {children}
-                    </code>
-                  ),
-                  pre: ({ children }) => (
-                    <pre className="bg-gray-100 p-4 rounded-lg overflow-x-auto mb-4">
-                      <code className="font-mono text-sm text-gray-800">
+}) => {
+  // HTML인지 Markdown인지 확인
+  const isHTML = content.includes("<") && content.includes(">");
+
+  return (
+    <div
+      className={cn(
+        "bg-gradient-to-br from-gray-50/50 to-white/50 overflow-y-auto",
+        className
+      )}
+    >
+      <div className="h-full overflow-auto p-4">
+        <div className="max-w-none mx-auto">
+          {/* 에디터와 동일한 스타일 적용 */}
+          <div
+            className="bg-white border border-gray-200 rounded-lg min-h-[600px] w-full p-6 shadow-sm"
+            style={{
+              fontFamily:
+                '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+              fontSize: "14px",
+              lineHeight: "1.6",
+              color: "rgba(55, 53, 47, 1)",
+            }}
+          >
+            {isEmpty ? (
+              <div className="flex flex-col items-center justify-center h-64 text-gray-400">
+                <FileText className="w-16 h-16 mb-4 opacity-30" />
+                <p className="text-lg font-medium">문서가 비어있습니다</p>
+                <p className="text-sm">아직 작성된 내용이 없습니다.</p>
+              </div>
+            ) : isHTML ? (
+              // HTML 콘텐츠를 마크다운으로 변환하여 렌더링
+              <div className="prose prose-sm max-w-none">
+                <ReactMarkdown
+                  components={{
+                    h1: ({ children }) => (
+                      <h1 className="text-2xl font-bold mb-4 mt-8 first:mt-0 text-gray-900">
+                        {children}
+                      </h1>
+                    ),
+                    h2: ({ children }) => (
+                      <h2 className="text-xl font-semibold mb-3 mt-6 text-gray-900">
+                        {children}
+                      </h2>
+                    ),
+                    h3: ({ children }) => (
+                      <h3 className="text-lg font-medium mb-2 mt-4 text-gray-900">
+                        {children}
+                      </h3>
+                    ),
+                    p: ({ children }) => (
+                      <p className="mb-3 text-gray-700 leading-relaxed">
+                        {children}
+                      </p>
+                    ),
+                    ul: ({ children }) => (
+                      <ul className="list-disc pl-6 mb-4 space-y-1">
+                        {children}
+                      </ul>
+                    ),
+                    ol: ({ children }) => (
+                      <ol className="list-decimal pl-6 mb-4 space-y-1">
+                        {children}
+                      </ol>
+                    ),
+                    li: ({ children }) => (
+                      <li className="text-gray-700 leading-relaxed">
+                        {children}
+                      </li>
+                    ),
+                    blockquote: ({ children }) => (
+                      <blockquote className="border-l-4 border-gray-300 pl-4 my-4 italic text-gray-600">
+                        {children}
+                      </blockquote>
+                    ),
+                    code: ({ children }) => (
+                      <code className="bg-gray-100 px-2 py-1 rounded text-sm font-mono text-gray-800">
                         {children}
                       </code>
-                    </pre>
-                  ),
-                  strong: ({ children }) => (
-                    <strong className="font-semibold text-gray-900">
-                      {children}
-                    </strong>
-                  ),
-                  em: ({ children }) => (
-                    <em className="italic text-gray-700">{children}</em>
-                  ),
-                  a: ({ href, children }) => (
-                    <a
-                      href={href}
-                      className="text-blue-600 hover:text-blue-800 underline"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      {children}
-                    </a>
-                  ),
-                  hr: () => <hr className="border-t border-gray-200 my-6" />,
-                }}
-              >
-                {content}
-              </ReactMarkdown>
-            </div>
-          )}
+                    ),
+                    pre: ({ children }) => (
+                      <pre className="bg-gray-100 p-4 rounded-lg overflow-x-auto mb-4">
+                        <code className="font-mono text-sm text-gray-800">
+                          {children}
+                        </code>
+                      </pre>
+                    ),
+                    strong: ({ children }) => (
+                      <strong className="font-semibold text-gray-900">
+                        {children}
+                      </strong>
+                    ),
+                    em: ({ children }) => (
+                      <em className="italic text-gray-700">{children}</em>
+                    ),
+                    a: ({ href, children }) => (
+                      <a
+                        href={href}
+                        className="text-blue-600 hover:text-blue-800 underline"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        {children}
+                      </a>
+                    ),
+                    hr: () => <hr className="border-t border-gray-200 my-6" />,
+                  }}
+                >
+                  {htmlToText(content)}
+                </ReactMarkdown>
+              </div>
+            ) : (
+              // Markdown 콘텐츠 렌더링
+              <div className="prose prose-sm max-w-none">
+                <ReactMarkdown
+                  components={{
+                    h1: ({ children }) => (
+                      <h1 className="text-2xl font-bold mb-4 mt-8 first:mt-0 text-gray-900">
+                        {children}
+                      </h1>
+                    ),
+                    h2: ({ children }) => (
+                      <h2 className="text-xl font-semibold mb-3 mt-6 text-gray-900">
+                        {children}
+                      </h2>
+                    ),
+                    h3: ({ children }) => (
+                      <h3 className="text-lg font-medium mb-2 mt-4 text-gray-900">
+                        {children}
+                      </h3>
+                    ),
+                    p: ({ children }) => (
+                      <p className="mb-3 text-gray-700 leading-relaxed">
+                        {children}
+                      </p>
+                    ),
+                    ul: ({ children }) => (
+                      <ul className="list-none pl-6 mb-4 space-y-1">
+                        {children}
+                      </ul>
+                    ),
+                    ol: ({ children }) => (
+                      <ol className="list-decimal pl-6 mb-4 space-y-1">
+                        {children}
+                      </ol>
+                    ),
+                    li: ({ children }) => (
+                      <li className="relative text-gray-700 leading-relaxed">
+                        <span className="absolute -left-4 top-0 text-gray-400">
+                          •
+                        </span>
+                        {children}
+                      </li>
+                    ),
+                    blockquote: ({ children }) => (
+                      <blockquote className="border-l-4 border-gray-300 pl-4 my-4 italic text-gray-600">
+                        {children}
+                      </blockquote>
+                    ),
+                    code: ({ children }) => (
+                      <code className="bg-gray-100 px-2 py-1 rounded text-sm font-mono text-gray-800">
+                        {children}
+                      </code>
+                    ),
+                    pre: ({ children }) => (
+                      <pre className="bg-gray-100 p-4 rounded-lg overflow-x-auto mb-4">
+                        <code className="font-mono text-sm text-gray-800">
+                          {children}
+                        </code>
+                      </pre>
+                    ),
+                    strong: ({ children }) => (
+                      <strong className="font-semibold text-gray-900">
+                        {children}
+                      </strong>
+                    ),
+                    em: ({ children }) => (
+                      <em className="italic text-gray-700">{children}</em>
+                    ),
+                    a: ({ href, children }) => (
+                      <a
+                        href={href}
+                        className="text-blue-600 hover:text-blue-800 underline"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        {children}
+                      </a>
+                    ),
+                    hr: () => <hr className="border-t border-gray-200 my-6" />,
+                  }}
+                >
+                  {content}
+                </ReactMarkdown>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>
-  </div>
-);
+  );
+};

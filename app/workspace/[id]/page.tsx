@@ -100,9 +100,9 @@ export default function DocumentPage() {
       // tiptap 에디터에 새 콘텐츠 적용
       editor.commands.setContent(htmlContent);
 
-      // 데이터베이스에 저장
-      await updateDocument(document.id, { content: content });
-      setLastSavedContent(content);
+      // 데이터베이스에 HTML 저장 (일관성 유지)
+      await updateDocument(document.id, { content: htmlContent });
+      setLastSavedContent(htmlContent);
       setHasUnsavedChanges(false);
 
       // Portal 닫기
