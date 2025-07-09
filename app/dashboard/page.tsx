@@ -623,7 +623,7 @@ export default function DashboardPage() {
                 <>
                   <span className="font-semibold">
                     "{documentToDelete.title}"
-                  </span>{" "}
+                  </span>
                   문서가 영구적으로 삭제됩니다.
                   <br />이 작업은 되돌릴 수 없습니다.
                 </>
