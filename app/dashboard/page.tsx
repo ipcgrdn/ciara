@@ -622,7 +622,7 @@ export default function DashboardPage() {
               {documentToDelete && (
                 <>
                   <span className="font-semibold">
-                    "{documentToDelete.title}"
+                    &quot;{documentToDelete.title}&quot;
                   </span>
                   문서가 영구적으로 삭제됩니다.
                   <br />이 작업은 되돌릴 수 없습니다.
@@ -639,7 +639,7 @@ export default function DashboardPage() {
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={confirmDeleteDocument}
-              className="bg-red-600 text-white hover:bg-red-700"
+              className="bg-black text-white hover:bg-gray-800"
             >
               삭제
             </AlertDialogAction>
