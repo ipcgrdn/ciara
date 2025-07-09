@@ -56,19 +56,12 @@ export default function Loading() {
           transition={{ duration: 0.8 }}
           className="mb-8"
         >
-          <motion.h1
-            initial={{ scale: 0.9 }}
-            animate={{ scale: 1 }}
-            transition={{
-              duration: 2,
-              repeat: Infinity,
-              repeatType: "reverse",
-              ease: "easeInOut",
-            }}
-            className="text-white text-6xl md:text-7xl font-bold font-montserrat tracking-wider mb-4"
-          >
-                          CIARA
-          </motion.h1>
+          <Image
+            src="/ciara.svg"
+            alt="CIARA Logo"
+            width={100}
+            height={100}
+          />
         </motion.div>
 
         {/* Loading indicator */}

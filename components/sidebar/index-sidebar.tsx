@@ -410,7 +410,7 @@ export function IndexSidebar({
                 <ChevronRight className="w-4 h-4 text-slate-600" />
               )}
               <BookOpen className="w-4 h-4 text-slate-600" />
-              <span className="text-sm font-medium text-slate-700">
+              <span className="text-sm font-mono text-slate-700">
                 Knowledge
               </span>
               {knowledgeItems.length > 0 && (
@@ -536,7 +536,7 @@ export function IndexSidebar({
                   <ChevronRight className="w-4 h-4 text-slate-600" />
                 )}
                 <List className="w-4 h-4 text-slate-600" />
-                <span className="text-sm font-medium text-slate-700">
+                <span className="text-sm font-mono text-slate-700">
                   Index
                 </span>
               </button>
@@ -558,7 +558,7 @@ export function IndexSidebar({
                           <div
                             key={item.id}
                             className={cn(
-                              "p-2 rounded-md hover:bg-white/60 transition-colors cursor-pointer text-sm flex-none",
+                              "p-2 rounded-md hover:bg-white/60 transition-colors cursor-pointer text-xs flex-none",
                               item.level === 1 &&
                                 "font-semibold text-slate-800",
                               item.level === 2 &&
@@ -567,7 +567,7 @@ export function IndexSidebar({
                                 "font-normal text-slate-600 ml-6"
                             )}
                           >
-                            {item.level === 3 && "• "}
+                            {item.level === 3 && ""}
                             {item.title}
                           </div>
                         ))}

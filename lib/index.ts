@@ -24,6 +24,21 @@ export interface OutlineItem {
 }
 
 /**
+ * indexUpdated 이벤트를 발생시키는 유틸리티 함수
+ */
+export function dispatchIndexUpdateEvent(documentId: string, indexContent: string) {
+  if (typeof window !== "undefined") {
+    const event = new CustomEvent("indexUpdated", {
+      detail: {
+        documentId,
+        indexContent,
+      },
+    });
+    window.dispatchEvent(event);
+  }
+}
+
+/**
  * 특정 문서의 목차를 가져옵니다
  */
 export async function getDocumentIndex(
@@ -79,6 +94,9 @@ export async function saveDocumentIndex(
       console.error("Error saving document index:", error);
       throw error;
     }
+
+    // 성공적으로 저장되면 indexUpdated 이벤트 발생
+    dispatchIndexUpdateEvent(documentId, outlineMarkdown);
 
     return data;
   } catch (error) {

@@ -11,6 +11,7 @@ import {
   Pencil,
   Check,
   ArrowUp,
+  Square,
 } from "lucide-react";
 import {
   ChatHistoryService,
@@ -19,13 +20,56 @@ import {
 } from "@/lib/chat-history";
 import { useAuth } from "@/contexts/AuthContext";
 import { Messages } from "./messages";
+import { getDocumentById, type Document } from "@/lib/documents";
+import { hasDocumentIndex, dispatchIndexUpdateEvent } from "@/lib/index";
+import { motion, AnimatePresence } from "framer-motion";
+import { CiaraResponse } from "@/ai/ciara-agent";
+
+// 애니메이션 컴포넌트 추가
+const AnimatedGenerating = () => {
+  const [dotCount, setDotCount] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setDotCount((prev) => (prev + 1) % 4); // 0, 1, 2, 3 순환
+    }, 500);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <motion.div
+      className="flex items-center gap-1 text-xs text-slate-500"
+      initial={{ opacity: 0, x: -10 }}
+      animate={{ opacity: 1, x: 0 }}
+      exit={{ opacity: 0, x: 10 }}
+      transition={{ duration: 0.3, ease: "easeOut" }}
+    >
+      <motion.span
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.1, duration: 0.5 }}
+      >
+        Generating
+      </motion.span>
+      <span className="w-6 text-left">{".".repeat(dotCount)}</span>
+    </motion.div>
+  );
+};
 
 interface AiSidebarProps {
   className?: string;
   documentId: string;
+  onDocumentProposal?: (proposedContent: string) => void;
+  onFullDocumentReview?: (aggregatedContent: string) => void;
 }
 
-export const AiSidebar = ({ className, documentId }: AiSidebarProps) => {
+export const AiSidebar = ({
+  className,
+  documentId,
+  onDocumentProposal,
+  onFullDocumentReview,
+}: AiSidebarProps) => {
   // localStorage에서 너비 설정 불러오기
   const [width, setWidth] = useState(() => {
     if (typeof window !== "undefined") {
@@ -48,10 +92,39 @@ export const AiSidebar = ({ className, documentId }: AiSidebarProps) => {
   const [editingTitle, setEditingTitle] = useState("");
   const sidebarRef = useRef<HTMLDivElement>(null);
 
+  // 스트리밍 중지를 위한 AbortController ref 추가
+  const abortControllerRef = useRef<AbortController | null>(null);
+
   const { user } = useAuth();
+
+  // 문서 컨텍스트 상태 추가
+  const [currentDocument, setCurrentDocument] = useState<Document | null>(null);
+  const [documentHasIndex, setDocumentHasIndex] = useState(false);
 
   const MIN_WIDTH = 300;
   const MAX_WIDTH = 520;
+
+  // 문서 정보 로드
+  const loadDocumentContext = async () => {
+    try {
+      const [doc, hasIndex] = await Promise.all([
+        getDocumentById(documentId),
+        hasDocumentIndex(documentId),
+      ]);
+
+      setCurrentDocument(doc);
+      setDocumentHasIndex(hasIndex);
+    } catch (error) {
+      console.error("문서 컨텍스트 로드 중 오류:", error);
+    }
+  };
+
+  // 컴포넌트 마운트 시 문서 컨텍스트 로드
+  useEffect(() => {
+    if (documentId) {
+      loadDocumentContext();
+    }
+  }, [documentId]);
 
   // 컴포넌트 마운트 시 현재 활성 세션과 메시지 로드
   useEffect(() => {
@@ -271,35 +344,310 @@ export const AiSidebar = ({ className, documentId }: AiSidebarProps) => {
     [width, updateWidth]
   );
 
+  // 메시지 생성 중지 함수
+  const handleStopGeneration = () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+    setIsLoading(false);
+  };
+
+  // CIARA 에이전트와 메시지 교환
   const handleSendMessage = async () => {
-    if (inputValue.trim()) {
-      try {
-        setIsLoading(true);
+    if (!inputValue.trim() || isLoading || !user) return;
 
-        // 사용자 메시지 저장
-        const result = await ChatHistoryService.saveMessage(
-          documentId,
-          user?.id || "",
-          "user",
-          inputValue.trim(),
-          currentSession?.id
-        );
+    const userMessage = inputValue.trim();
+    setInputValue("");
+    setIsLoading(true);
 
-        if (result.message && result.session) {
-          // 새 세션이 생성된 경우 업데이트
-          if (!currentSession && result.session) {
-            setCurrentSession(result.session);
-          }
+    // AbortController 생성
+    abortControllerRef.current = new AbortController();
 
-          // 메시지 목록에 추가
-          setMessages((prev) => [...prev, result.message!]);
-          setInputValue("");
-        }
-      } catch (error) {
-        console.error("메시지 전송 중 오류:", error);
-      } finally {
-        setIsLoading(false);
+    try {
+      // 사용자 메시지 저장
+      const { session: updatedSession } = await ChatHistoryService.saveMessage(
+        documentId,
+        user.id,
+        "user",
+        userMessage,
+        currentSession?.id
+      );
+
+      if (updatedSession && !currentSession) {
+        setCurrentSession(updatedSession);
       }
+
+      // 메시지 목록에 사용자 메시지 즉시 추가
+      const userMessageObj: ChatMessage = {
+        id: `temp-user-${Date.now()}`,
+        type: "user",
+        content: userMessage,
+        timestamp: new Date().toISOString(),
+      };
+
+      setMessages((prev) => [...prev, userMessageObj]);
+
+      // CIARA 에이전트 API 호출을 위한 컨텍스트 구성
+      const conversationHistory = [...messages, userMessageObj].map((msg) => ({
+        role: msg.type as "user" | "assistant",
+        content: msg.content,
+        timestamp: msg.timestamp,
+      }));
+
+      const documentState = currentDocument
+        ? {
+            title: currentDocument.title,
+            hasContent: Boolean(currentDocument.content?.trim()),
+            hasIndex: documentHasIndex,
+            lastModified: currentDocument.updated_at,
+          }
+        : undefined;
+
+      // 스트리밍 응답 시작
+      const response = await fetch("/api/ai/ciara", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          message: userMessage,
+          context: {
+            userId: user.id,
+            documentId: documentId,
+            conversationHistory: conversationHistory,
+            currentDocumentState: documentState,
+          },
+        }),
+        signal: abortControllerRef.current.signal,
+      });
+
+      if (!response.ok) {
+        throw new Error("CIARA API 호출 실패");
+      }
+
+      // 스트리밍 응답 처리
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+      let finalResult: CiaraResponse | null = null;
+
+      // 스트리밍 메시지들을 추적하기 위한 맵
+      const streamingMessages = new Map<string, ChatMessage>();
+
+      if (reader) {
+        try {
+          while (true) {
+            const { done, value } = await reader.read();
+
+            if (done) break;
+
+            // AbortController로 중지 확인
+            if (abortControllerRef.current?.signal.aborted) {
+              reader.cancel();
+              break;
+            }
+
+            const chunk = decoder.decode(value, { stream: true });
+            const lines = chunk.split("\n");
+
+            for (const line of lines) {
+              if (line.startsWith("data: ")) {
+                const data = line.slice(6);
+
+                if (data === "[DONE]") {
+                  break;
+                }
+
+                try {
+                  const parsed = JSON.parse(data);
+
+                  if (parsed.type === "chunk") {
+                    const { label, content, metadata } = parsed;
+
+                    // 새로운 메시지를 항상 생성 (같은 라벨이어도 분리)
+                    const newMessageId = `stream-${label}-${Date.now()}-${Math.random()}`;
+                    const newMessage: ChatMessage = {
+                      id: newMessageId,
+                      type: "assistant",
+                      content: content,
+                      timestamp: new Date().toISOString(),
+                      label,
+                      metadata,
+                      isStreaming: true,
+                    };
+
+                    streamingMessages.set(
+                      `${label}-${newMessageId}`,
+                      newMessage
+                    );
+
+                    // UI에 새 메시지 추가
+                    setMessages((prev) => [...prev, newMessage]);
+
+                    // 데이터베이스에 저장 (실시간 저장)
+                    if (updatedSession) {
+                      ChatHistoryService.saveStreamingMessage(
+                        updatedSession.id,
+                        "assistant",
+                        content,
+                        label,
+                        metadata
+                      ).then((savedMessage) => {
+                        if (savedMessage) {
+                          // 임시 ID를 실제 DB ID로 교체
+                          const realMessage: ChatMessage = {
+                            ...newMessage,
+                            id: savedMessage.id,
+                          };
+                          streamingMessages.set(
+                            `${label}-${newMessageId}`,
+                            realMessage
+                          );
+
+                          setMessages((prev) =>
+                            prev.map((msg) =>
+                              msg.id === newMessageId ? realMessage : msg
+                            )
+                          );
+                        }
+                      });
+                    }
+
+                    // INDEX_CONTENT 라벨인 경우 Index Sidebar 업데이트 이벤트 발생
+                    if (label === "INDEX_CONTENT") {
+                      dispatchIndexUpdateEvent(documentId, content);
+                    }
+                  } else if (parsed.type === "final") {
+                    finalResult = parsed;
+                  } else if (parsed.type === "error") {
+                    throw new Error(parsed.error || "스트리밍 오류");
+                  }
+                } catch (parseError) {
+                  console.warn("JSON 파싱 오류:", parseError);
+                }
+              }
+            }
+          }
+        } catch (error) {
+          if (error instanceof Error && error.name === "AbortError") {
+            console.log("사용자가 메시지 생성을 중지했습니다.");
+          } else {
+            throw error;
+          }
+        }
+      }
+
+      // 스트리밍 완료 처리
+      if (!abortControllerRef.current?.signal.aborted && finalResult?.success) {
+        // 모든 스트리밍 메시지를 완료 상태로 업데이트 (DB 저장은 하지 않음)
+        streamingMessages.forEach((message) => {
+          const completedMessage: ChatMessage = {
+            ...message,
+            isStreaming: false,
+          };
+
+          setMessages((prev) =>
+            prev.map((msg) => (msg.id === message.id ? completedMessage : msg))
+          );
+
+          // 데이터베이스에서 완료 상태로만 업데이트 (내용은 이미 저장됨)
+          if (updatedSession && !message.id.startsWith("stream-")) {
+            ChatHistoryService.updateStreamingMessage(
+              message.id,
+              message.content,
+              message.label as ChatMessage["label"],
+              message.metadata,
+              true // 완료 상태로만 업데이트
+            );
+          }
+        });
+
+        // 최종 응답 메시지가 있고 실제 텍스트 내용이 있는 경우에만 추가
+        if (finalResult.response && finalResult.response.trim()) {
+          const finalMessage: ChatMessage = {
+            id: `final-${Date.now()}`,
+            type: "assistant",
+            content: finalResult.response,
+            timestamp: new Date().toISOString(),
+            label: "FINAL",
+            isStreaming: false,
+          };
+
+          setMessages((prev) => [...prev, finalMessage]);
+
+          // 최종 메시지만 별도로 저장 (스트리밍 히스토리는 제외)
+          if (updatedSession) {
+            ChatHistoryService.saveMessage(
+              documentId,
+              user.id,
+              "assistant",
+              finalResult.response,
+              updatedSession.id,
+              {
+                label: "FINAL",
+                isStreaming: false,
+              }
+            );
+          }
+        }
+
+        // 문서 상태가 변경되었을 수 있으므로 다시 로드
+        if (
+          finalResult.actionsTaken?.some(
+            (action: string) =>
+              action.includes("목차") || action.includes("내용")
+          )
+        ) {
+          await loadDocumentContext();
+        }
+      } else if (abortControllerRef.current?.signal.aborted) {
+        // 중지된 경우 현재까지의 모든 메시지를 STOPPED 상태로 업데이트
+        streamingMessages.forEach((message) => {
+          const stoppedMessage: ChatMessage = {
+            ...message,
+            label: "STOPPED",
+            isStreaming: false,
+          };
+
+          setMessages((prev) =>
+            prev.map((msg) => (msg.id === message.id ? stoppedMessage : msg))
+          );
+        });
+      } else if (finalResult && !finalResult.success) {
+        // 에러 메시지 추가
+        const errorMessage: ChatMessage = {
+          id: `error-${Date.now()}`,
+          type: "assistant",
+          content: finalResult?.error || "오류가 발생했습니다.",
+          timestamp: new Date().toISOString(),
+          label: "ERROR",
+          isStreaming: false,
+        };
+
+        setMessages((prev) => [...prev, errorMessage]);
+      }
+    } catch (error) {
+      if (error instanceof Error && error.name === "AbortError") {
+        console.log("API 요청이 중지되었습니다.");
+      } else {
+        console.error("메시지 전송 중 오류:", error);
+
+        // 에러 메시지 추가
+        const errorMessage: ChatMessage = {
+          id: `error-${Date.now()}`,
+          type: "assistant",
+          content:
+            "죄송합니다. 메시지 처리 중 오류가 발생했습니다. 다시 시도해 주세요.",
+          timestamp: new Date().toISOString(),
+          label: "ERROR",
+          isStreaming: false,
+        };
+
+        setMessages((prev) => [...prev, errorMessage]);
+      }
+    } finally {
+      setIsLoading(false);
+      abortControllerRef.current = null;
     }
   };
 
@@ -334,27 +682,39 @@ export const AiSidebar = ({ className, documentId }: AiSidebarProps) => {
         <CardContent className="flex-1 p-0 flex flex-col h-full overflow-hidden">
           {/* 1. 최상단 아이콘 섹션 */}
           <div className="bg-transparent p-1 flex-none border-b border-slate-200/40">
-            <div className="flex items-center justify-end gap-2">
-              <button
-                onClick={handleNewChat}
-                disabled={isLoading}
-                className="flex items-center gap-2 p-1.5 bg-white/60 rounded-lg hover:bg-white/80 transition-colors disabled:opacity-50"
-                title="새 채팅 시작"
-              >
-                <Plus className="w-4 h-4 text-slate-600" />
-              </button>
-              <button
-                onClick={handleHistoryToggle}
-                className={cn(
-                  "p-1.5 rounded-lg transition-colors",
-                  showHistory
-                    ? "bg-gray-100/80 text-gray-600"
-                    : "bg-white/60 hover:bg-white/80 text-slate-600"
+            <div className="flex items-center justify-between gap-2">
+              {/* 왼쪽: 세션 제목 */}
+              <div className="flex-1 min-w-0 px-2">
+                {currentSession?.title && (
+                  <h3 className="text-xs font-medium text-slate-700 truncate">
+                    {currentSession.title}
+                  </h3>
                 )}
-                title="채팅 히스토리"
-              >
-                <History className="w-4 h-4" />
-              </button>
+              </div>
+
+              {/* 오른쪽: 아이콘들 */}
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <button
+                  onClick={handleNewChat}
+                  disabled={isLoading}
+                  className="flex items-center gap-2 p-1.5 bg-white/60 rounded-lg hover:bg-white/80 transition-colors disabled:opacity-50"
+                  title="새 채팅 시작"
+                >
+                  <Plus className="w-4 h-4 text-slate-600" />
+                </button>
+                <button
+                  onClick={handleHistoryToggle}
+                  className={cn(
+                    "p-1.5 rounded-lg transition-colors",
+                    showHistory
+                      ? "bg-gray-100/80 text-gray-600"
+                      : "bg-white/60 hover:bg-white/80 text-slate-600"
+                  )}
+                  title="채팅 히스토리"
+                >
+                  <History className="w-4 h-4" />
+                </button>
+              </div>
             </div>
           </div>
 
@@ -477,7 +837,12 @@ export const AiSidebar = ({ className, documentId }: AiSidebarProps) => {
               ) : (
                 /* 메시지 표시 */
                 <div className="flex-1 overflow-y-auto p-4">
-                  <Messages messages={messages} isLoading={isLoading} />
+                  <Messages
+                    messages={messages}
+                    isLoading={isLoading}
+                    onDocumentProposal={onDocumentProposal}
+                    onFullDocumentReview={onFullDocumentReview}
+                  />
                 </div>
               )}
             </div>
@@ -512,23 +877,39 @@ export const AiSidebar = ({ className, documentId }: AiSidebarProps) => {
               </div>
 
               {/* 하단 아이콘 영역 */}
-              <div className="px-3 py-1">
+              <div className="px-3 py-1 flex items-center justify-between">
+                <div className="flex items-center justify-start gap-2">
+                  <AnimatePresence mode="wait">
+                    {isLoading && <AnimatedGenerating key="generating" />}
+                  </AnimatePresence>
+                </div>
                 <div className="flex items-center justify-end gap-2">
                   <button className="p-1.5 hover:bg-slate-100/50 rounded-lg transition-colors">
                     <Paperclip className="w-4 h-4 text-slate-600" />
                   </button>
-                  <button
-                    onClick={handleSendMessage}
-                    disabled={!inputValue.trim() || isLoading}
-                    className={cn(
-                      "p-1.5 rounded-lg transition-colors flex-none",
-                      inputValue.trim() && !isLoading
-                        ? "text-slate-600 hover:bg-slate-100/50"
-                        : "text-slate-400 cursor-not-allowed"
-                    )}
-                  >
-                    <ArrowUp className="w-4 h-4" />
-                  </button>
+                  {isLoading ? (
+                    <button
+                      onClick={handleStopGeneration}
+                      className="p-1.5 rounded-lg transition-colors flex-none text-slate-600 hover:bg-slate-100/50"
+                      title="생성 중지"
+                    >
+                      <Square className="w-4 h-4" />
+                    </button>
+                  ) : (
+                    <button
+                      onClick={handleSendMessage}
+                      disabled={!inputValue.trim()}
+                      className={cn(
+                        "p-1.5 rounded-lg transition-colors flex-none",
+                        inputValue.trim()
+                          ? "text-slate-600 hover:bg-slate-100/50"
+                          : "text-slate-400 cursor-not-allowed"
+                      )}
+                      title="메시지 전송"
+                    >
+                      <ArrowUp className="w-4 h-4" />
+                    </button>
+                  )}
                 </div>
               </div>
             </div>

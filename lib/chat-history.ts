@@ -6,6 +6,27 @@ export interface ChatMessage {
   type: "user" | "assistant";
   content: string;
   timestamp: string;
+  // 스트리밍 메시지 지원을 위한 필드 추가
+  label?:
+    | "PROCESSING"
+    | "GENERATING"
+    | "INDEX_CONTENT"
+    | "DOCUMENT_CONTENT"
+    | "SUCCESS"
+    | "ERROR"
+    | "FINAL"
+    | "STOPPED";
+  metadata?: {
+    progress?: { current: number; total: number; section?: string };
+    timestamp?: string;
+    toolName?: string;
+    streamingHistory?: Array<{
+      label?: string;
+      content: string;
+      metadata?: ChatMessage["metadata"];
+    }>;
+  };
+  isStreaming?: boolean; // 스트리밍 중인지 여부
 }
 
 export interface ChatSession {
@@ -120,7 +141,12 @@ export class ChatHistoryService {
     userId: string,
     type: "user" | "assistant",
     content: string,
-    sessionId?: string
+    sessionId?: string,
+    streamingData?: {
+      label?: ChatMessage["label"];
+      metadata?: ChatMessage["metadata"];
+      isStreaming?: boolean;
+    }
   ): Promise<{ message: ChatMessage | null; session: ChatSession | null }> {
     try {
       let currentSession: ChatSession | null = null;
@@ -154,13 +180,33 @@ export class ChatHistoryService {
       }
 
       // 메시지 저장
+      const insertData: {
+        session_id: string;
+        type: "user" | "assistant";
+        content: string;
+        streaming_metadata?: {
+          label?: string;
+          metadata?: ChatMessage["metadata"];
+          isStreaming?: boolean;
+        };
+      } = {
+        session_id: currentSession.id,
+        type,
+        content,
+      };
+
+      // 스트리밍 메타데이터가 있으면 추가 (JSONB 형태로 저장)
+      if (streamingData) {
+        insertData.streaming_metadata = {
+          label: streamingData.label,
+          metadata: streamingData.metadata,
+          isStreaming: streamingData.isStreaming || false,
+        };
+      }
+
       const { data: messageData, error: messageError } = await supabase
         .from("chat_messages")
-        .insert({
-          session_id: currentSession.id,
-          type,
-          content,
-        })
+        .insert(insertData)
         .select()
         .single();
 
@@ -181,6 +227,18 @@ export class ChatHistoryService {
         content: messageData.content,
         timestamp: messageData.created_at,
       };
+
+      // 스트리밍 메타데이터가 있으면 복원
+      if (messageData.streaming_metadata) {
+        try {
+          const streamingMeta = messageData.streaming_metadata;
+          message.label = streamingMeta.label;
+          message.metadata = streamingMeta.metadata;
+          message.isStreaming = false; // 저장된 메시지는 항상 완료된 상태
+        } catch (error) {
+          console.warn("Failed to parse streaming metadata:", error);
+        }
+      }
 
       return { message, session: currentSession };
     } catch (error) {
@@ -205,12 +263,28 @@ export class ChatHistoryService {
         return [];
       }
 
-      return data.map((msg) => ({
-        id: msg.id,
-        type: msg.type,
-        content: msg.content,
-        timestamp: msg.created_at,
-      }));
+      return data.map((msg) => {
+        const message: ChatMessage = {
+          id: msg.id,
+          type: msg.type,
+          content: msg.content,
+          timestamp: msg.created_at,
+        };
+
+        // 스트리밍 메타데이터가 있으면 복원
+        if (msg.streaming_metadata) {
+          try {
+            const streamingMeta = msg.streaming_metadata;
+            message.label = streamingMeta.label;
+            message.metadata = streamingMeta.metadata;
+            message.isStreaming = false; // 저장된 메시지는 항상 완료된 상태
+          } catch (error) {
+            console.warn("Failed to parse streaming metadata:", error);
+          }
+        }
+
+        return message;
+      });
     } catch (error) {
       console.error("Error fetching session messages:", error);
       return [];
@@ -318,6 +392,135 @@ export class ChatHistoryService {
     } catch (error) {
       console.error("Error deleting session:", error);
       return false;
+    }
+  }
+
+  /**
+   * 스트리밍 메시지 저장 (실시간 업데이트용)
+   */
+  static async saveStreamingMessage(
+    sessionId: string,
+    type: "user" | "assistant",
+    content: string,
+    label?: ChatMessage["label"],
+    metadata?: ChatMessage["metadata"]
+  ): Promise<ChatMessage | null> {
+    try {
+      const insertData: {
+        session_id: string;
+        type: "user" | "assistant";
+        content: string;
+        streaming_metadata?: {
+          label?: string;
+          metadata?: ChatMessage["metadata"];
+          isStreaming?: boolean;
+        };
+      } = {
+        session_id: sessionId,
+        type,
+        content,
+      };
+
+      // 스트리밍 메타데이터 추가
+      if (label || metadata) {
+        insertData.streaming_metadata = {
+          label,
+          metadata,
+          isStreaming: true,
+        };
+      }
+
+      const { data: messageData, error: messageError } = await supabase
+        .from("chat_messages")
+        .insert(insertData)
+        .select()
+        .single();
+
+      if (messageError) {
+        console.error("Error saving streaming message:", messageError);
+        return null;
+      }
+
+      // 세션의 updated_at 업데이트
+      await supabase
+        .from("chat_sessions")
+        .update({ updated_at: new Date().toISOString() })
+        .eq("id", sessionId);
+
+      const message: ChatMessage = {
+        id: messageData.id,
+        type: messageData.type,
+        content: messageData.content,
+        timestamp: messageData.created_at,
+        label,
+        metadata,
+        isStreaming: true,
+      };
+
+      return message;
+    } catch (error) {
+      console.error("Error saving streaming message:", error);
+      return null;
+    }
+  }
+
+  /**
+   * 스트리밍 메시지 업데이트
+   */
+  static async updateStreamingMessage(
+    messageId: string,
+    content: string,
+    label?: ChatMessage["label"],
+    metadata?: ChatMessage["metadata"],
+    isCompleted: boolean = false
+  ): Promise<ChatMessage | null> {
+    try {
+      const updateData: {
+        content: string;
+        streaming_metadata?: {
+          label?: string;
+          metadata?: ChatMessage["metadata"];
+          isStreaming?: boolean;
+        };
+      } = {
+        content,
+      };
+
+      // 스트리밍 메타데이터 업데이트
+      if (label || metadata || isCompleted) {
+        updateData.streaming_metadata = {
+          label,
+          metadata,
+          isStreaming: !isCompleted,
+        };
+      }
+
+      const { data: messageData, error: messageError } = await supabase
+        .from("chat_messages")
+        .update(updateData)
+        .eq("id", messageId)
+        .select()
+        .single();
+
+      if (messageError) {
+        console.error("Error updating streaming message:", messageError);
+        return null;
+      }
+
+      const message: ChatMessage = {
+        id: messageData.id,
+        type: messageData.type,
+        content: messageData.content,
+        timestamp: messageData.created_at,
+        label,
+        metadata,
+        isStreaming: !isCompleted,
+      };
+
+      return message;
+    } catch (error) {
+      console.error("Error updating streaming message:", error);
+      return null;
     }
   }
 }

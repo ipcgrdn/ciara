@@ -6,6 +6,7 @@ import { Navbar } from "@/components/document/navbar";
 import { Toolbar } from "@/components/document/toolbar";
 import { IndexSidebar } from "@/components/sidebar/index-sidebar";
 import { AiSidebar } from "@/components/sidebar/ai-sidebar";
+import { DocumentProposalPortal } from "@/components/document/document-proposal-portal";
 import { useAuth } from "@/contexts/AuthContext";
 import { useParams, useRouter } from "next/navigation";
 import {
@@ -16,6 +17,7 @@ import {
 } from "@/lib/documents";
 import { Loader2Icon } from "lucide-react";
 import { useEditorStore } from "@/store/use-editor-store";
+import { markdownToHtml } from "@/lib/utils";
 
 export default function DocumentPage() {
   const { user, loading } = useAuth();
@@ -50,6 +52,11 @@ export default function DocumentPage() {
     return true;
   });
 
+  // 문서 제안 Portal 상태 관리
+  const [isDocumentProposalOpen, setIsDocumentProposalOpen] = useState(false);
+  const [proposedDocumentContent, setProposedDocumentContent] = useState("");
+  const [isApplyingProposal, setIsApplyingProposal] = useState(false);
+
   // 사이드바 토글 함수들
   const toggleIndexSidebar = () => {
     const newState = !showIndexSidebar;
@@ -68,6 +75,49 @@ export default function DocumentPage() {
     if (typeof window !== "undefined") {
       localStorage.setItem("ciara-show-ai-sidebar", JSON.stringify(newState));
     }
+  };
+
+  // 문서 제안 관련 핸들러
+  const handleDocumentProposal = (proposedContent: string) => {
+    setProposedDocumentContent(proposedContent);
+    setIsDocumentProposalOpen(true);
+  };
+
+  const handleFullDocumentReview = (aggregatedContent: string) => {
+    setProposedDocumentContent(aggregatedContent);
+    setIsDocumentProposalOpen(true);
+  };
+
+  const handleApproveProposal = async (content: string) => {
+    if (!editor || !document) return;
+
+    try {
+      setIsApplyingProposal(true);
+
+      // 마크다운을 HTML로 변환
+      const htmlContent = await markdownToHtml(content);
+
+      // tiptap 에디터에 새 콘텐츠 적용
+      editor.commands.setContent(htmlContent);
+
+      // 데이터베이스에 저장
+      await updateDocument(document.id, { content: content });
+      setLastSavedContent(content);
+      setHasUnsavedChanges(false);
+
+      // Portal 닫기
+      setIsDocumentProposalOpen(false);
+      setProposedDocumentContent("");
+    } catch (error) {
+      console.error("문서 적용 실패:", error);
+    } finally {
+      setIsApplyingProposal(false);
+    }
+  };
+
+  const handleRejectProposal = () => {
+    setIsDocumentProposalOpen(false);
+    setProposedDocumentContent("");
   };
 
   // 문서 내용 자동 저장 함수
@@ -265,7 +315,7 @@ export default function DocumentPage() {
   if (loading || isLoading || !user || !document) {
     return (
       <div className="min-h-screen bg-[#fafbfd] flex items-center justify-center">
-        <div className="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center">
+        <div className="w-10 h-10 rounded-xl flex items-center justify-center">
           <Loader2Icon className="w-5 h-5 text-gray-700" />
         </div>
       </div>
@@ -306,10 +356,27 @@ export default function DocumentPage() {
         {/* 오른쪽 AI 사이드바 */}
         {showAiSidebar && (
           <div className="h-full">
-            <AiSidebar documentId={documentId} className="h-full" />
+            <AiSidebar
+              documentId={documentId}
+              className="h-full"
+              onDocumentProposal={handleDocumentProposal}
+              onFullDocumentReview={handleFullDocumentReview}
+            />
           </div>
         )}
       </div>
+
+      {/* 문서 제안 Portal */}
+      <DocumentProposalPortal
+        isOpen={isDocumentProposalOpen}
+        onClose={() => setIsDocumentProposalOpen(false)}
+        proposedContent={proposedDocumentContent}
+        currentContent={document?.content || ""}
+        documentTitle={document?.title || ""}
+        onApprove={handleApproveProposal}
+        onReject={handleRejectProposal}
+        isApplying={isApplyingProposal}
+      />
     </div>
   );
 }
