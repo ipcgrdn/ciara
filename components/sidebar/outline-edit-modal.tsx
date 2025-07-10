@@ -302,39 +302,6 @@ export function OutlineEditModal({
     setEditableOutline((prev) => prev.filter((item) => item.id !== id));
   }, []);
 
-  // 빠른 추가 템플릿
-  const addTemplate = useCallback(
-    (template: "basic" | "detailed") => {
-      const templates = {
-        basic: [
-          { level: 1, title: "서론" },
-          { level: 1, title: "본론" },
-          { level: 1, title: "결론" },
-        ],
-        detailed: [
-          { level: 1, title: "서론" },
-          { level: 2, title: "배경" },
-          { level: 2, title: "목적" },
-          { level: 1, title: "본론" },
-          { level: 2, title: "주요 내용" },
-          { level: 3, title: "세부 사항" },
-          { level: 1, title: "결론" },
-          { level: 2, title: "요약" },
-          { level: 2, title: "향후 계획" },
-        ],
-      };
-
-      const newItems = templates[template].map((item, index) => ({
-        id: `outline-${seed}-template-${Date.now()}-${index}`,
-        level: item.level,
-        title: item.title,
-      }));
-
-      setEditableOutline(newItems);
-    },
-    [seed]
-  );
-
   if (!isOpen) return null;
 
   return (
