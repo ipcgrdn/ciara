@@ -2,7 +2,6 @@
 
 import { cn } from "@/lib/utils";
 import { ChatMessage } from "@/lib/chat-history";
-import Image from "next/image";
 import ReactMarkdown from "react-markdown";
 import { useEffect, useRef, useState, useMemo } from "react";
 import { motion } from "framer-motion";
