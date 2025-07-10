@@ -164,7 +164,7 @@ export const DocumentProposalPortal = ({
                   onClick={handleApprove}
                   disabled={isApplying}
                   className="w-full rounded-full"
-                  variant="outline"
+                  variant="default"
                 >
                   <Check className="w-4 h-4" />
                   {isApplying ? "적용 중..." : "승인 및 적용"}

@@ -526,9 +526,9 @@ export const Messages = ({
           <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
             <RainbowButton
               onClick={() => onFullDocumentReview(aggregatedDocumentContent)}
-              className="w-full text-xs font-medium"
-              size="sm"
-              variant="outline"
+              className="w-full text-xs font-medium text-white rounded-lg"
+              size="default"
+              variant="default"
             >
               <Check className="w-4 h-4" />
               전체 문서 검토 ({documentContentMessages.length}개 섹션)

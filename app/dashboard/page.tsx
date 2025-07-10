@@ -19,7 +19,7 @@ import {
   ArrowUpTrayIcon,
   ChevronRightIcon,
 } from "@heroicons/react/24/outline";
-import { ArrowUp, Loader2Icon } from "lucide-react";
+import { Loader2Icon } from "lucide-react";
 import Image from "next/image";
 import {
   AlertDialog,
@@ -56,8 +56,7 @@ export default function DashboardPage() {
   const [documentToDelete, setDocumentToDelete] = useState<Document | null>(
     null
   );
-  const [promptInput, setPromptInput] = useState("");
-  const [isSubmittingPrompt, setIsSubmittingPrompt] = useState(false);
+
   const menuButtonRefs = useRef<{ [key: string]: HTMLButtonElement | null }>(
     {}
   );
@@ -72,34 +71,6 @@ export default function DashboardPage() {
       router.push(`/workspace/${newDocumentId}`);
     } catch (error) {
       console.error("문서 생성 실패:", error);
-    }
-  };
-
-  // 프롬프트로 문서 생성 함수
-  const createDocumentWithPrompt = async () => {
-    if (!user || !promptInput.trim() || isSubmittingPrompt) return;
-
-    setIsSubmittingPrompt(true);
-    try {
-      // UUID를 미리 생성하여 워크스페이스로 이동
-      const newDocumentId = uuidv4();
-      // 프롬프트를 URL 파라미터로 전달
-      router.push(
-        `/workspace/${newDocumentId}?prompt=${encodeURIComponent(
-          promptInput.trim()
-        )}`
-      );
-    } catch (error) {
-      console.error("문서 생성 실패:", error);
-      setIsSubmittingPrompt(false);
-    }
-  };
-
-  // Enter 키 처리
-  const handlePromptKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      createDocumentWithPrompt();
     }
   };
 
@@ -352,7 +323,7 @@ export default function DashboardPage() {
 
   return (
     <main className="min-h-screen overflow-hidden">
-      <div className="fixed inset-0 w-full h-full bg-gradient-to-b from-transparent via-transparent to-black/5"></div>
+      <div className="fixed inset-0 w-full h-full bg-gradient-to-b from-transparent via-transparent to-black/10"></div>
 
       {/* Navigation */}
       <div className="fixed top-0 left-0 right-0 z-40 pt-4 px-4">
@@ -705,64 +676,9 @@ export default function DashboardPage() {
             </div>
           )}
         </motion.div>
-      </div>
-
-      {/* Fixed Bottom Input */}
-      <div className="fixed bottom-10 left-0 right-0 z-40">
-        <div className="relative pb-4 px-4">
-          <div className="w-full max-w-3xl mx-auto">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.5 }}
-              className="relative backdrop-blur-2xl bg-gradient-to-br from-white/20 to-white/5 border border-gray-200 rounded-3xl shadow-[0_8px_32px_rgba(0,0,0,0.1)] overflow-hidden"
-            >
-              {/* Liquid Glass Effects */}
-              <div className="absolute inset-0 bg-gradient-to-br from-white/15 to-transparent rounded-3xl"></div>
-              <div className="absolute inset-0 bg-gradient-to-t from-transparent via-white/5 to-white/15 rounded-3xl"></div>
-              <div className="absolute top-0 left-1/4 w-1/2 h-px bg-gradient-to-r from-transparent via-white/50 to-transparent"></div>
-              <div className="absolute bottom-0 right-1/4 w-1/3 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent"></div>
-
-              <div className="relative p-4">
-                <div className="flex items-center space-x-4">
-                  <div className="flex-1">
-                    <textarea
-                      value={promptInput}
-                      onChange={(e) => setPromptInput(e.target.value)}
-                      onKeyDown={handlePromptKeyDown}
-                      placeholder="어떤 문서를 작성하고 싶으신가요? 예: '마케팅 계획서 작성해줘', '보고서 작성해줘'"
-                      className="w-full bg-transparent text-black placeholder-gray-500 resize-none border-0 outline-none text-sm leading-relaxed min-h-[50px] max-h-[120px]"
-                      rows={2}
-                      disabled={isSubmittingPrompt}
-                    />
-                  </div>
-
-                  <button
-                    onClick={createDocumentWithPrompt}
-                    disabled={!promptInput.trim() || isSubmittingPrompt}
-                    className="relative p-3 rounded-2xl backdrop-blur-2xl bg-gradient-to-br from-white/25 to-white/10 border border-white/30 shadow-[0_4px_16px_rgba(0,0,0,0.1)] overflow-hidden hover:from-white/35 hover:to-white/15 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed group"
-                  >
-                    {/* Button Liquid Glass Effects */}
-                    <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent rounded-2xl"></div>
-                    <div className="absolute inset-0 bg-gradient-to-t from-transparent via-white/10 to-white/20 rounded-2xl"></div>
-                    <div className="absolute top-0 left-1/4 w-1/2 h-px bg-gradient-to-r from-transparent via-white/60 to-transparent"></div>
-
-                    <div className="relative z-10">
-                      {isSubmittingPrompt ? (
-                        <Loader2Icon className="w-5 h-5 text-gray-700 animate-spin" />
-                      ) : (
-                        <ArrowUp className="w-5 h-5 text-gray-700 group-hover:scale-110 transition-transform duration-200" />
-                      )}
-                    </div>
-                  </button>
-                </div>
-              </div>
-            </motion.div>
-          </div>
-        </div>
         <div className="fixed inset-0 w-full h-full pointer-events-none">
           <RetroGrid
-            angle={45}
+            angle={0}
             cellSize={50}
             opacity={0.25}
             lightLineColor="rgb(156, 163, 175)"
