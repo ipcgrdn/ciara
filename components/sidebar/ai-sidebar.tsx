@@ -95,6 +95,14 @@ export const AiSidebar = ({
   // 스트리밍 중지를 위한 AbortController ref 추가
   const abortControllerRef = useRef<AbortController | null>(null);
 
+  // 백그라운드 스트리밍 상태 관리
+  const [isStreamingInBackground, setIsStreamingInBackground] = useState(false);
+  const backgroundStreamRef = useRef<{
+    sessionId: string;
+    userMessage: string;
+    isActive: boolean;
+  } | null>(null);
+
   const { user } = useAuth();
 
   // 문서 컨텍스트 상태 추가
@@ -130,6 +138,37 @@ export const AiSidebar = ({
   useEffect(() => {
     loadCurrentSession();
   }, [documentId]);
+
+  // Page Visibility API를 활용한 백그라운드 스트리밍 처리
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        // 탭이 비활성화될 때 - 스트리밍을 백그라운드로 이동
+        if (isLoading && currentSession) {
+          setIsStreamingInBackground(true);
+          backgroundStreamRef.current = {
+            sessionId: currentSession.id,
+            userMessage: "스트리밍 진행 중...",
+            isActive: true,
+          };
+        }
+      } else {
+        // 탭이 다시 활성화될 때 - 백그라운드 스트리밍 확인
+        if (isStreamingInBackground && backgroundStreamRef.current?.isActive) {
+          // 세션 메시지 다시 로드하여 백그라운드에서 추가된 메시지 동기화
+          loadCurrentSession();
+        }
+        setIsStreamingInBackground(false);
+        backgroundStreamRef.current = null;
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [isLoading, currentSession, isStreamingInBackground]);
 
   // 현재 활성 세션 로드
   const loadCurrentSession = async () => {
@@ -441,8 +480,11 @@ export const AiSidebar = ({
 
             if (done) break;
 
-            // AbortController로 중지 확인
-            if (abortControllerRef.current?.signal.aborted) {
+            // AbortController로 중지 확인 (명시적 중지만 처리)
+            if (
+              abortControllerRef.current?.signal.aborted &&
+              !document.hidden
+            ) {
               reader.cancel();
               break;
             }
@@ -538,7 +580,10 @@ export const AiSidebar = ({
       }
 
       // 스트리밍 완료 처리
-      if (!abortControllerRef.current?.signal.aborted && finalResult?.success) {
+      if (
+        (!abortControllerRef.current?.signal.aborted || document.hidden) &&
+        finalResult?.success
+      ) {
         // 모든 스트리밍 메시지를 완료 상태로 업데이트 (DB 저장은 하지 않음)
         streamingMessages.forEach((message) => {
           const completedMessage: ChatMessage = {
@@ -600,6 +645,12 @@ export const AiSidebar = ({
         ) {
           await loadDocumentContext();
         }
+
+        // 백그라운드 스트리밍 완료 처리
+        if (backgroundStreamRef.current?.isActive) {
+          backgroundStreamRef.current.isActive = false;
+          setIsStreamingInBackground(false);
+        }
       } else if (abortControllerRef.current?.signal.aborted) {
         // 중지된 경우 현재까지의 모든 메시지를 STOPPED 상태로 업데이트
         streamingMessages.forEach((message) => {
@@ -648,6 +699,12 @@ export const AiSidebar = ({
     } finally {
       setIsLoading(false);
       abortControllerRef.current = null;
+
+      // 백그라운드 스트리밍 상태 정리
+      if (backgroundStreamRef.current?.isActive) {
+        backgroundStreamRef.current.isActive = false;
+        setIsStreamingInBackground(false);
+      }
     }
   };
 

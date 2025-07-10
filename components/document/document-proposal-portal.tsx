@@ -181,11 +181,12 @@ export const DocumentProposalPortal = ({
               </div>
             </div>
 
-            {/* 오른쪽 패널 - 제안 문서 */}
+            {/* 오른쪽 패널 - 편집 가능한 제안 문서 */}
             <div className="flex-1 overflow-hidden">
               <div className="h-full flex items-center">
                 <EditorViewer
                   content={proposedContent}
+                  isRight={true}
                   className="w-full h-fit max-h-full"
                 />
               </div>
@@ -254,15 +255,17 @@ const htmlToText = (html: string): string => {
   return processNode(temp).trim();
 };
 
-// 에디터 스타일 뷰어 컴포넌트
+// 에디터 스타일 뷰어 컴포넌트 (읽기 전용)
 const EditorViewer = ({
   content,
   isEmpty = false,
   className = "",
+  isRight = false,
 }: {
   content: string;
   isEmpty?: boolean;
   className?: string;
+  isRight?: boolean;
 }) => {
   // HTML인지 Markdown인지 확인
   const isHTML = content.includes("<") && content.includes(">");
@@ -271,6 +274,7 @@ const EditorViewer = ({
     <div
       className={cn(
         "bg-gradient-to-br from-gray-50/50 to-white/50 overflow-y-auto",
+        isRight && "bg-gradient-to-br from-blue-50/50 to-indigo-50/50",
         className
       )}
     >
@@ -278,7 +282,10 @@ const EditorViewer = ({
         <div className="max-w-none mx-auto">
           {/* 에디터와 동일한 스타일 적용 */}
           <div
-            className="bg-white border border-gray-200 rounded-lg min-h-[600px] w-full p-6 shadow-sm"
+            className={cn(
+              "bg-white border border-gray-200 rounded-lg min-h-[600px] w-full p-6 shadow-sm",
+              isRight && "bg-white border-blue-200 border-2"
+            )}
             style={{
               fontFamily:
                 '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
@@ -288,7 +295,7 @@ const EditorViewer = ({
             }}
           >
             {isEmpty ? (
-              <div className="flex flex-col items-center justify-center h-64 text-gray-400">
+              <div className="flex flex-col items-center justify-center h-full text-gray-400">
                 <FileText className="w-16 h-16 mb-4 opacity-30" />
                 <p className="text-lg font-medium">문서가 비어있습니다</p>
                 <p className="text-sm">아직 작성된 내용이 없습니다.</p>

@@ -44,33 +44,59 @@ async function callClaudeForDocumentGeneration(
     additionalContext
   );
 
-  try {
-    const response = await anthropic.messages.create({
-      model: "claude-sonnet-4-20250514",
-      max_tokens: 3000,
-      temperature: 0.7,
-      messages: [
-        {
-          role: "user",
-          content: prompt,
-        },
-      ],
-    });
+  // Rate Limit 대응을 위한 재시도 설정
+  const maxRetries = 3;
+  const baseDelay = 1000; // 1초
 
-    const content = response.content[0];
-    if (content.type !== "text") {
-      throw new Error("Unexpected response type from Claude API");
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const response = await anthropic.messages.create({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 2000, // Rate Limit 대응을 위해 더 보수적인 값으로 조정
+        temperature: 0.7,
+        messages: [
+          {
+            role: "user",
+            content: prompt,
+          },
+        ],
+      });
+
+      const content = response.content[0];
+      if (content.type !== "text") {
+        throw new Error("Unexpected response type from Claude API");
+      }
+
+      return content.text;
+    } catch (error: any) {
+      console.error(
+        `Claude API 호출 시도 ${attempt}/${maxRetries} 실패:`,
+        error
+      );
+
+      // Rate Limit 오류인지 확인
+      const isRateLimit =
+        error?.status === 429 ||
+        error?.message?.includes("rate limit") ||
+        error?.message?.includes("Too Many Requests");
+
+      if (isRateLimit && attempt < maxRetries) {
+        // 지수 백오프로 대기 시간 계산
+        const delay = baseDelay * Math.pow(2, attempt - 1);
+        await new Promise((resolve) => setTimeout(resolve, delay));
+        continue;
+      }
+
+      // 최대 재시도 횟수 초과하거나 다른 오류인 경우
+      throw new Error(
+        `Claude API failed: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`
+      );
     }
-
-    return content.text;
-  } catch (error) {
-    console.error("Error calling Claude API:", error);
-    throw new Error(
-      `Claude API failed: ${
-        error instanceof Error ? error.message : "Unknown error"
-      }`
-    );
   }
+
+  throw new Error("모든 재시도 시도가 실패했습니다.");
 }
 
 // 문서 생성을 위한 최적화된 프롬프트 엔지니어링 (Cursor AI 기법 적용)
@@ -300,6 +326,12 @@ export async function generateDocument(
       }
 
       try {
+        // Rate Limit 방지를 위해 섹션 간 지연 시간 추가
+        if (i > 0) {
+          console.log(`섹션 ${i + 1} 생성 전 1초 대기...`);
+          await new Promise((resolve) => setTimeout(resolve, 1000));
+        }
+
         // AI를 이용한 섹션 내용 생성
         const rawResponse = await callClaudeForDocumentGeneration(
           document.title,
