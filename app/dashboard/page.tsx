@@ -19,7 +19,7 @@ import {
   ArrowUpTrayIcon,
   ChevronRightIcon,
 } from "@heroicons/react/24/outline";
-import { Loader2Icon } from "lucide-react";
+import { ArrowUp, Loader2Icon } from "lucide-react";
 import Image from "next/image";
 import {
   AlertDialog,
@@ -38,6 +38,7 @@ import {
   formatLastModified,
   type Document,
 } from "@/lib/documents";
+import { RetroGrid } from "@/components/ui/retro-grid";
 
 export default function DashboardPage() {
   const { user, loading, signOut } = useAuth();
@@ -55,6 +56,8 @@ export default function DashboardPage() {
   const [documentToDelete, setDocumentToDelete] = useState<Document | null>(
     null
   );
+  const [promptInput, setPromptInput] = useState("");
+  const [isSubmittingPrompt, setIsSubmittingPrompt] = useState(false);
   const menuButtonRefs = useRef<{ [key: string]: HTMLButtonElement | null }>(
     {}
   );
@@ -69,6 +72,34 @@ export default function DashboardPage() {
       router.push(`/workspace/${newDocumentId}`);
     } catch (error) {
       console.error("문서 생성 실패:", error);
+    }
+  };
+
+  // 프롬프트로 문서 생성 함수
+  const createDocumentWithPrompt = async () => {
+    if (!user || !promptInput.trim() || isSubmittingPrompt) return;
+
+    setIsSubmittingPrompt(true);
+    try {
+      // UUID를 미리 생성하여 워크스페이스로 이동
+      const newDocumentId = uuidv4();
+      // 프롬프트를 URL 파라미터로 전달
+      router.push(
+        `/workspace/${newDocumentId}?prompt=${encodeURIComponent(
+          promptInput.trim()
+        )}`
+      );
+    } catch (error) {
+      console.error("문서 생성 실패:", error);
+      setIsSubmittingPrompt(false);
+    }
+  };
+
+  // Enter 키 처리
+  const handlePromptKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      createDocumentWithPrompt();
     }
   };
 
@@ -268,7 +299,7 @@ export default function DashboardPage() {
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: -10 }}
           transition={{ duration: 0.15 }}
-          className="fixed w-40 bg-white/95 backdrop-blur-xl border border-gray-200/50 rounded-xl shadow-xl z-[99999]"
+          className="fixed w-40 bg-white/95 backdrop-blur-xl border border-gray-200/50 rounded-xl shadow-xl z-40"
           style={{
             left: menuPosition.x,
             top: menuPosition.y,
@@ -320,140 +351,178 @@ export default function DashboardPage() {
     user.user_metadata?.name || user.user_metadata?.full_name || user.email;
 
   return (
-    <main className="min-h-screen bg-white">
+    <main className="min-h-screen overflow-hidden">
+      <div className="fixed inset-0 w-full h-full bg-gradient-to-b from-transparent via-transparent to-black/5"></div>
+
       {/* Navigation */}
-      <nav className="border-b border-gray-100/50 sticky top-0 z-40 backdrop-blur-xl bg-transparent">
-        <div className="max-w-6xl mx-auto px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            {/* Logo */}
-            <Link href="/" className="flex items-center space-x-3">
-              <Image
-                src="/logo.svg"
-                alt="Logo"
-                width={100}
-                height={100}
-                className="w-32 h-32 invert"
-              />
-            </Link>
+      <div className="fixed top-0 left-0 right-0 z-40 pt-4 px-4">
+        <nav className="w-full max-w-6xl mx-auto bg-transparent relative">
+          {/* Liquid Glass Effect */}
+          <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent rounded-3xl"></div>
+          <div className="absolute inset-0 bg-gradient-to-t from-transparent via-white/5 to-white/10 rounded-3xl"></div>
+          <div className="absolute top-0 left-1/4 w-1/2 h-px bg-gradient-to-r from-transparent via-white/40 to-transparent"></div>
 
-            {/* Profile Section */}
-            <div className="flex items-center space-x-4">
-              <div className="relative" data-profile-dropdown>
-                <button
-                  className="flex items-center space-x-3 p-2 rounded-full hover:bg-gray-50/80 transition-all duration-200"
-                  onClick={() =>
-                    setIsProfileDropdownOpen(!isProfileDropdownOpen)
-                  }
-                >
-                  {userProfileImage ? (
-                    <Image
-                      src={userProfileImage}
-                      alt="Profile"
-                      className="w-8 h-8 rounded-full object-cover"
-                      width={32}
-                      height={32}
-                    />
-                  ) : (
-                    <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
-                      <UserIcon className="h-4 w-4 text-gray-600" />
+          <div className="relative px-6 py-3">
+            <div className="flex items-center justify-between space-x-8">
+              {/* Logo */}
+              <Link href="/" className="flex items-center">
+                <div className="w-12 h-12 bg-transparent">
+                  {/* Liquid Glass Effects */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-white/15 to-transparent rounded-2xl"></div>
+                  <div className="absolute inset-0 bg-gradient-to-t from-transparent via-white/5 to-white/15 rounded-2xl"></div>
+                  <div className="absolute top-0 left-1/4 w-1/2 h-px bg-gradient-to-r from-transparent via-white/50 to-transparent"></div>
+                  <div className="absolute bottom-0 right-1/4 w-1/3 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent"></div>
+
+                  <Image
+                    src="/ciara.svg"
+                    alt="Logo"
+                    width={100}
+                    height={100}
+                    className="w-8 h-8 relative z-10"
+                  />
+                </div>
+              </Link>
+
+              {/* Profile Section */}
+              <div className="flex items-center space-x-4">
+                <div className="relative" data-profile-dropdown>
+                  <button
+                    onClick={() =>
+                      setIsProfileDropdownOpen(!isProfileDropdownOpen)
+                    }
+                  >
+                    {/* Liquid Glass Effects */}
+                    <div className="absolute inset-0 bg-gradient-to-br from-white/15 to-transparent rounded-2xl"></div>
+                    <div className="absolute inset-0 bg-gradient-to-t from-transparent via-white/5 to-white/15 rounded-2xl"></div>
+                    <div className="absolute top-0 left-1/4 w-1/2 h-px bg-gradient-to-r from-transparent via-white/50 to-transparent"></div>
+                    <div className="absolute bottom-0 right-1/4 w-1/3 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent"></div>
+
+                    <div className="relative z-10">
+                      {userProfileImage ? (
+                        <Image
+                          src={userProfileImage}
+                          alt="Profile"
+                          className="w-8 h-8 rounded-full object-cover"
+                          width={32}
+                          height={32}
+                        />
+                      ) : (
+                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-white/25 to-white/10 backdrop-blur-sm border border-white/30 flex items-center justify-center shadow-inner">
+                          <UserIcon className="h-4 w-4 text-gray-700" />
+                        </div>
+                      )}
                     </div>
-                  )}
-                </button>
+                  </button>
 
-                {/* Profile Dropdown */}
-                <AnimatePresence>
-                  {isProfileDropdownOpen && (
-                    <motion.div
-                      initial={{ opacity: 0, scale: 0.95, y: -10 }}
-                      animate={{ opacity: 1, scale: 1, y: 0 }}
-                      exit={{ opacity: 0, scale: 0.95, y: -10 }}
-                      transition={{ duration: 0.15 }}
-                      className="absolute right-0 top-full mt-3 w-64 bg-white/90 backdrop-blur-xl border border-gray-200/50 rounded-2xl shadow-xl z-[9999]"
-                    >
-                      <div className="p-4 border-b border-gray-100/50">
-                        <div className="flex items-center space-x-3">
-                          {userProfileImage ? (
-                            <Image
-                              src={userProfileImage}
-                              alt="Profile"
-                              className="w-12 h-12 rounded-full object-cover"
-                              width={48}
-                              height={48}
-                            />
-                          ) : (
-                            <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center">
-                              <UserIcon className="h-6 w-6 text-gray-600" />
+                  {/* Profile Dropdown */}
+                  <AnimatePresence>
+                    {isProfileDropdownOpen && (
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                        transition={{ duration: 0.15 }}
+                        className="absolute right-0 top-full mt-3 w-64 bg-white/90 backdrop-blur-xl border border-gray-200/50 rounded-2xl shadow-xl z-40"
+                      >
+                        <div className="p-4 border-b border-gray-100/50">
+                          <div className="flex items-center space-x-3">
+                            {userProfileImage ? (
+                              <Image
+                                src={userProfileImage}
+                                alt="Profile"
+                                className="w-12 h-12 rounded-full object-cover"
+                                width={48}
+                                height={48}
+                              />
+                            ) : (
+                              <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center">
+                                <UserIcon className="h-6 w-6 text-gray-600" />
+                              </div>
+                            )}
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium text-gray-900 truncate">
+                                {userName}
+                              </p>
+                              <p className="text-xs text-gray-500 truncate">
+                                {user.email}
+                              </p>
                             </div>
-                          )}
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-gray-900 truncate">
-                              {userName}
-                            </p>
-                            <p className="text-xs text-gray-500 truncate">
-                              {user.email}
-                            </p>
                           </div>
                         </div>
-                      </div>
 
-                      <div className="p-2">
-                        <button className="w-full flex items-center space-x-3 px-3 py-2.5 text-sm text-gray-700 hover:bg-gray-50/80 rounded-xl transition-colors">
-                          <Cog6ToothIcon className="h-4 w-4" />
-                          <span>계정 설정</span>
-                        </button>
-                        <button className="w-full flex items-center space-x-3 px-3 py-2.5 text-sm text-gray-700 hover:bg-gray-50/80 rounded-xl transition-colors">
-                          <UserIcon className="h-4 w-4" />
-                          <span>프로필 관리</span>
-                        </button>
-
-                        <div className="border-t border-gray-100/50 mt-2 pt-2">
-                          <button
-                            onClick={signOut}
-                            className="w-full flex items-center space-x-3 px-3 py-2.5 text-sm text-red-600 hover:bg-red-50/80 rounded-xl transition-colors"
-                          >
-                            <svg
-                              className="h-4 w-4"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              stroke="currentColor"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
-                              />
-                            </svg>
-                            <span>로그아웃</span>
+                        <div className="p-2">
+                          <button className="w-full flex items-center space-x-3 px-3 py-2.5 text-sm text-gray-700 hover:bg-gray-50/80 rounded-xl transition-colors">
+                            <Cog6ToothIcon className="h-4 w-4" />
+                            <span>계정 설정</span>
                           </button>
+                          <button className="w-full flex items-center space-x-3 px-3 py-2.5 text-sm text-gray-700 hover:bg-gray-50/80 rounded-xl transition-colors">
+                            <UserIcon className="h-4 w-4" />
+                            <span>프로필 관리</span>
+                          </button>
+
+                          <div className="border-t border-gray-100/50 mt-2 pt-2">
+                            <button
+                              onClick={signOut}
+                              className="w-full flex items-center space-x-3 px-3 py-2.5 text-sm text-red-600 hover:bg-red-50/80 rounded-xl transition-colors"
+                            >
+                              <svg
+                                className="h-4 w-4"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+                                />
+                              </svg>
+                              <span>로그아웃</span>
+                            </button>
+                          </div>
                         </div>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      </nav>
+        </nav>
+      </div>
 
-      <div className="max-w-6xl mx-auto px-6 lg:px-8 py-12">
-        {/* Header Section */}
+      <div className="max-w-6xl mx-auto px-6 lg:px-8 mt-32 pb-32">
+        {/* Header */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="mb-12 text-center"
+          transition={{ duration: 0.8, delay: 0.2 }}
+          className="text-center mb-12"
         >
-          <h1 className="text-lg md:text-2xl font-bold font-montserrat text-black mb-4 tracking-wide">
-            환영합니다,{" "}
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-gray-800 to-black">
-              {userName?.split(" ")[0] || "User"}님
-            </span>
-          </h1>
-          <p className="text-lg text-black opacity-50">
-            오늘은 어떤 글을 작성해볼까요?
-          </p>
+          <div className="relative">
+            {/* Main greeting */}
+            <h1 className="text-2xl md:text-4xl font-bold bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 bg-clip-text text-transparent mb-4 tracking-tight">
+              안녕하세요, {userName?.split(" ")[0]}님
+            </h1>
+
+            {/* Subtitle with dynamic time-based greeting */}
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.6, delay: 0.6 }}
+              className="text-sm md:text-lg text-gray-600 font-medium mb-4 max-w-2xl mx-auto leading-relaxed"
+            >
+              {(() => {
+                const hour = new Date().getHours();
+                if (hour < 12)
+                  return "좋은 아침입니다. 오늘도 멋진 아이디어를 문서로 만들어보세요.";
+                if (hour < 18)
+                  return "좋은 오후입니다. 창의적인 작업을 시작해보세요.";
+                return "좋은 저녁입니다. 하루를 마무리하며 생각을 정리해보세요.";
+              })()}
+            </motion.p>
+          </div>
         </motion.div>
 
         {/* Quick Actions */}
@@ -463,15 +532,21 @@ export default function DashboardPage() {
           transition={{ duration: 0.6, delay: 0.1 }}
           className="mb-16"
         >
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* New Document Button */}
             <button
               onClick={createNewDocument}
-              className="group flex items-center justify-between bg-white/50 backdrop-blur-sm border border-gray-300 rounded-2xl p-6 hover:bg-white/80 hover:border-gray-400 transition-all duration-300 hover:shadow-lg"
+              className="group relative flex items-center justify-between backdrop-blur-2xl bg-gradient-to-br from-white/20 to-white/5 border border-white/30 rounded-3xl p-6 hover:from-white/30 hover:to-white/10 transition-all duration-500 shadow-[0_8px_32px_rgba(0,0,0,0.1)] overflow-hidden"
             >
-              <div className="flex items-center space-x-4">
-                <div className="w-10 h-10 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                  <PlusIcon className="h-5 w-5 text-gray-700" />
+              {/* Liquid Glass Effects */}
+              <div className="absolute inset-0 bg-gradient-to-br from-white/15 to-transparent rounded-3xl"></div>
+              <div className="absolute inset-0 bg-gradient-to-t from-transparent via-white/5 to-white/15 rounded-3xl"></div>
+              <div className="absolute top-0 left-1/4 w-1/2 h-px bg-gradient-to-r from-transparent via-white/50 to-transparent"></div>
+              <div className="absolute bottom-0 right-1/4 w-1/3 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent"></div>
+
+              <div className="relative flex items-center space-x-4">
+                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-white/25 to-white/10 backdrop-blur-sm border border-white/30 flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-inner">
+                  <PlusIcon className="h-6 w-6 text-gray-700" />
                 </div>
                 <div className="text-left">
                   <h3 className="text-lg font-semibold font-montserrat text-black">
@@ -482,14 +557,22 @@ export default function DashboardPage() {
                   </p>
                 </div>
               </div>
-              <ChevronRightIcon className="h-5 w-5 text-gray-400 group-hover:text-gray-700 group-hover:translate-x-1 transition-all duration-300" />
+              <div className="relative">
+                <ChevronRightIcon className="h-5 w-5 text-gray-400 group-hover:text-gray-700 group-hover:translate-x-1 transition-all duration-300" />
+              </div>
             </button>
 
             {/* Secondary Actions */}
-            <button className="group flex items-center justify-between bg-white/50 backdrop-blur-sm border border-gray-300 rounded-2xl p-6 hover:bg-white/80 hover:border-gray-400 transition-all duration-300 hover:shadow-lg">
-              <div className="flex items-center space-x-4">
-                <div className="w-10 h-10 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                  <ArrowUpTrayIcon className="h-5 w-5 text-gray-700" />
+            <button className="group relative flex items-center justify-between backdrop-blur-2xl bg-gradient-to-br from-white/20 to-white/5 border border-white/30 rounded-3xl p-6 hover:from-white/30 hover:to-white/10 transition-all duration-500 shadow-[0_8px_32px_rgba(0,0,0,0.1)] overflow-hidden">
+              {/* Liquid Glass Effects */}
+              <div className="absolute inset-0 bg-gradient-to-br from-white/15 to-transparent rounded-3xl"></div>
+              <div className="absolute inset-0 bg-gradient-to-t from-transparent via-white/5 to-white/15 rounded-3xl"></div>
+              <div className="absolute top-0 left-1/4 w-1/2 h-px bg-gradient-to-r from-transparent via-white/50 to-transparent"></div>
+              <div className="absolute bottom-0 right-1/4 w-1/3 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent"></div>
+
+              <div className="relative flex items-center space-x-4">
+                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-white/25 to-white/10 backdrop-blur-sm border border-white/30 flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-inner">
+                  <ArrowUpTrayIcon className="h-6 w-6 text-gray-700" />
                 </div>
                 <div className="text-left">
                   <h3 className="text-lg font-semibold font-montserrat text-black">
@@ -500,7 +583,9 @@ export default function DashboardPage() {
                   </p>
                 </div>
               </div>
-              <ChevronRightIcon className="h-5 w-5 text-gray-400 group-hover:text-gray-700 group-hover:translate-x-1 transition-all duration-300" />
+              <div className="relative">
+                <ChevronRightIcon className="h-5 w-5 text-gray-400 group-hover:text-gray-700 group-hover:translate-x-1 transition-all duration-300" />
+              </div>
             </button>
           </div>
         </motion.div>
@@ -519,19 +604,24 @@ export default function DashboardPage() {
 
           {!isLoadingDocuments && documents.length === 0 ? (
             /* Empty State */
-            <div className="flex flex-col items-center justify-center py-20 bg-white/30 backdrop-blur-sm border border-gray-200/50 rounded-2xl">
-              <div className="w-16 h-16 flex items-center justify-center mb-4">
+            <div className="relative flex flex-col items-center justify-center py-20 backdrop-blur-2xl bg-gradient-to-br from-white/20 to-white/5 border border-white/30 rounded-3xl shadow-[0_8px_32px_rgba(0,0,0,0.1)] overflow-hidden">
+              {/* Liquid Glass Effects */}
+              <div className="absolute inset-0 bg-gradient-to-br from-white/15 to-transparent rounded-3xl"></div>
+              <div className="absolute inset-0 bg-gradient-to-t from-transparent via-white/5 to-white/15 rounded-3xl"></div>
+              <div className="absolute top-0 left-1/4 w-1/2 h-px bg-gradient-to-r from-transparent via-white/50 to-transparent"></div>
+
+              <div className="relative w-16 h-16 rounded-2xl bg-gradient-to-br from-white/25 to-white/10 backdrop-blur-sm border border-white/30 flex items-center justify-center mb-4 shadow-inner">
                 <DocumentTextIcon className="w-8 h-8 text-gray-400" />
               </div>
-              <h3 className="text-lg font-semibold font-montserrat text-black mb-2">
+              <h3 className="relative text-lg font-semibold font-montserrat text-black mb-2">
                 첫 번째 문서를 만들어보세요
               </h3>
-              <p className="text-gray-600 text-center mb-6 max-w-md text-sm">
+              <p className="relative text-gray-600 text-center mb-6 max-w-md text-sm">
                 Ciara와 함께 새로운 문서 작성 경험을 시작해보세요.
               </p>
               <button
                 onClick={createNewDocument}
-                className="bg-gray-100/50 text-black px-6 py-3 rounded-xl font-medium hover:bg-gray-100 transition-colors duration-200 flex items-center space-x-2"
+                className="relative backdrop-blur-xl bg-gradient-to-br from-white/25 to-white/10 border border-white/30 text-black px-6 py-3 rounded-xl font-medium hover:from-white/35 hover:to-white/15 transition-all duration-300 flex items-center space-x-2 shadow-inner"
               >
                 <PlusIcon className="h-4 w-4" />
                 <span>새 문서 만들기</span>
@@ -539,20 +629,25 @@ export default function DashboardPage() {
             </div>
           ) : (
             /* Document List */
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {documents.map((doc: Document, index: number) => (
                 <motion.div
                   key={doc.id}
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.3, delay: 0.05 * index }}
-                  className={`group flex items-center justify-between bg-white/50 backdrop-blur-sm border border-gray-300 rounded-xl p-4 hover:bg-white/80 hover:border-gray-400 transition-all duration-300 cursor-pointer ${
-                    documentMenuOpen === doc.id ? "z-[9999]" : "z-10"
+                  className={`group relative flex items-center justify-between backdrop-blur-2xl bg-gradient-to-br from-white/20 to-white/5 border border-white/30 rounded-2xl p-4 hover:from-white/30 hover:to-white/10 transition-all duration-500 cursor-pointer shadow-[0_4px_16px_rgba(0,0,0,0.1)] overflow-hidden ${
+                    documentMenuOpen === doc.id ? "z-30" : "z-10"
                   }`}
                   onClick={() => handleDocumentClick(doc.id)}
                 >
-                  <div className="flex items-center space-x-4 flex-1">
-                    <div className="w-8 h-8 flex items-center justify-center">
+                  {/* Liquid Glass Effects */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent rounded-2xl"></div>
+                  <div className="absolute inset-0 bg-gradient-to-t from-transparent via-white/5 to-white/10 rounded-2xl"></div>
+                  <div className="absolute top-0 left-1/4 w-1/2 h-px bg-gradient-to-r from-transparent via-white/40 to-transparent"></div>
+
+                  <div className="relative flex items-center space-x-4 flex-1">
+                    <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-white/20 to-white/10 backdrop-blur-sm border border-white/20 flex items-center justify-center shadow-inner">
                       <DocumentTextIcon className="h-4 w-4 text-gray-600" />
                     </div>
 
@@ -597,7 +692,7 @@ export default function DashboardPage() {
                       ref={(el) => {
                         menuButtonRefs.current[doc.id] = el;
                       }}
-                      className="opacity-0 group-hover:opacity-100 p-2 rounded-lg hover:bg-gray-100/80 transition-all duration-200"
+                      className="relative opacity-0 group-hover:opacity-100 p-2 rounded-xl bg-gradient-to-br from-white/15 to-white/5 backdrop-blur-sm border border-white/20 hover:from-white/25 hover:to-white/10 transition-all duration-300 shadow-inner"
                       onClick={(e) => handleMenuOpen(doc.id, e)}
                     >
                       <EllipsisVerticalIcon className="h-4 w-4 text-gray-500" />
@@ -612,8 +707,73 @@ export default function DashboardPage() {
         </motion.div>
       </div>
 
+      {/* Fixed Bottom Input */}
+      <div className="fixed bottom-10 left-0 right-0 z-40">
+        <div className="relative pb-4 px-4">
+          <div className="w-full max-w-3xl mx-auto">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.5 }}
+              className="relative backdrop-blur-2xl bg-gradient-to-br from-white/20 to-white/5 border border-gray-200 rounded-3xl shadow-[0_8px_32px_rgba(0,0,0,0.1)] overflow-hidden"
+            >
+              {/* Liquid Glass Effects */}
+              <div className="absolute inset-0 bg-gradient-to-br from-white/15 to-transparent rounded-3xl"></div>
+              <div className="absolute inset-0 bg-gradient-to-t from-transparent via-white/5 to-white/15 rounded-3xl"></div>
+              <div className="absolute top-0 left-1/4 w-1/2 h-px bg-gradient-to-r from-transparent via-white/50 to-transparent"></div>
+              <div className="absolute bottom-0 right-1/4 w-1/3 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent"></div>
+
+              <div className="relative p-4">
+                <div className="flex items-center space-x-4">
+                  <div className="flex-1">
+                    <textarea
+                      value={promptInput}
+                      onChange={(e) => setPromptInput(e.target.value)}
+                      onKeyDown={handlePromptKeyDown}
+                      placeholder="어떤 문서를 작성하고 싶으신가요? 예: '마케팅 계획서 작성해줘', '보고서 작성해줘'"
+                      className="w-full bg-transparent text-black placeholder-gray-500 resize-none border-0 outline-none text-sm leading-relaxed min-h-[50px] max-h-[120px]"
+                      rows={2}
+                      disabled={isSubmittingPrompt}
+                    />
+                  </div>
+
+                  <button
+                    onClick={createDocumentWithPrompt}
+                    disabled={!promptInput.trim() || isSubmittingPrompt}
+                    className="relative p-3 rounded-2xl backdrop-blur-2xl bg-gradient-to-br from-white/25 to-white/10 border border-white/30 shadow-[0_4px_16px_rgba(0,0,0,0.1)] overflow-hidden hover:from-white/35 hover:to-white/15 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed group"
+                  >
+                    {/* Button Liquid Glass Effects */}
+                    <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent rounded-2xl"></div>
+                    <div className="absolute inset-0 bg-gradient-to-t from-transparent via-white/10 to-white/20 rounded-2xl"></div>
+                    <div className="absolute top-0 left-1/4 w-1/2 h-px bg-gradient-to-r from-transparent via-white/60 to-transparent"></div>
+
+                    <div className="relative z-10">
+                      {isSubmittingPrompt ? (
+                        <Loader2Icon className="w-5 h-5 text-gray-700 animate-spin" />
+                      ) : (
+                        <ArrowUp className="w-5 h-5 text-gray-700 group-hover:scale-110 transition-transform duration-200" />
+                      )}
+                    </div>
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        </div>
+        <div className="fixed inset-0 w-full h-full pointer-events-none">
+          <RetroGrid
+            angle={45}
+            cellSize={50}
+            opacity={0.25}
+            lightLineColor="rgb(156, 163, 175)"
+            darkLineColor="rgb(156, 163, 175)"
+            className="transform scale-110"
+          />
+        </div>
+      </div>
+
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent className="sm:max-w-md bg-white/80 rounded-2xl backdrop-blur-xl">
+        <AlertDialogContent className="sm:max-w-md bg-white/80 rounded-2xl backdrop-blur-xl z-50">
           <AlertDialogHeader>
             <AlertDialogTitle className="text-lg font-semibold text-gray-900">
               문서를 삭제하시겠습니까?

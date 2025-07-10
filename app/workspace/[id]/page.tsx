@@ -343,7 +343,7 @@ export default function DocumentPage() {
       <div className="pt-[114px] print:pt-0 flex h-screen">
         {/* 왼쪽 Index 사이드바 */}
         {showIndexSidebar && (
-          <div className="h-full">
+          <div className="h-full print:hidden">
             <IndexSidebar documentId={documentId} className="h-full" />
           </div>
         )}
@@ -355,7 +355,7 @@ export default function DocumentPage() {
 
         {/* 오른쪽 AI 사이드바 */}
         {showAiSidebar && (
-          <div className="h-full">
+          <div className="h-full print:hidden">
             <AiSidebar
               documentId={documentId}
               className="h-full"

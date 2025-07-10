@@ -93,7 +93,7 @@ export const DocumentInput = ({
         />
       ) : (
         <span
-          className="text-lg px-1.5 cursor-pointer truncate hover:bg-gray-100 rounded transition-colors"
+          className="text-lg px-1.5 cursor-pointer truncate hover:bg-gray-100 rounded transition-colors font-semibold"
           onClick={handleTitleClick}
         >
           {document.title}

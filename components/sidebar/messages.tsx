@@ -389,58 +389,7 @@ export const Messages = ({
   }, [messages]);
 
   if (messages.length === 0) {
-    return (
-      /* 메시지가 없을 때의 초기 상태 */
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="h-full flex flex-col items-center justify-center"
-      >
-        <div className="relative">
-          <div className="w-32 h-32 flex items-center justify-center">
-            <Image
-              src="/ciara.svg"
-              alt="CIARA"
-              width={64}
-              height={64}
-              className="opacity-80"
-            />
-          </div>
-          <motion.div
-            animate={{
-              scale: [1, 1.1, 1],
-              opacity: [0.5, 0.8, 0.5],
-            }}
-            transition={{
-              duration: 2,
-              repeat: Infinity,
-              ease: "easeInOut",
-            }}
-            className="absolute -inset-2 rounded-full bg-gradient-to-br from-blue-100 to-purple-100 -z-10"
-          />
-        </div>
-
-        <div className="text-center space-y-3 max-w-xs">
-          <h3 className="font-semibold text-gray-800 text-sm">
-            안녕하세요! CIARA입니다
-          </h3>
-          <p className="text-xs text-gray-600 leading-relaxed">
-            오늘은 어떤 문서를 만들고 싶으신가요?
-          </p>
-          <div className="flex flex-wrap gap-2 justify-center mt-4">
-            <span className="px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-full text-xs text-gray-600">
-              📝 목차 생성
-            </span>
-            <span className="px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-full text-xs text-gray-600">
-              ✨ 문서 작성
-            </span>
-            <span className="px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-full text-xs text-gray-600">
-              💡 아이디어 정리
-            </span>
-          </div>
-        </div>
-      </motion.div>
-    );
+    return null;
   }
 
   // 메시지들을 순차적으로 렌더링 (각 메시지는 독립적으로 처리)

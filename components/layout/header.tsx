@@ -5,14 +5,13 @@ import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
-import { Menu, X, ChevronDown } from "lucide-react";
+import { Menu, X } from "lucide-react";
 import Image from "next/image";
 
 export default function Header() {
   const { user } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
-  const [isLanguageOpen, setIsLanguageOpen] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -28,11 +27,6 @@ export default function Header() {
     { name: "Features", href: "#features" },
     { name: "Pricing", href: "#pricing" },
     { name: "Contact", href: "#contact" },
-  ];
-
-  const languages = [
-    { code: "en", name: "English" },
-    { code: "ko", name: "한국어" },
   ];
 
   return (
@@ -94,40 +88,6 @@ export default function Header() {
             transition={{ duration: 0.6, delay: 0.2 }}
             className="flex items-center space-x-2 sm:space-x-4"
           >
-            {/* Language Selector - Hidden on mobile */}
-            <div className="relative hidden md:block">
-              <button
-                onClick={() => setIsLanguageOpen(!isLanguageOpen)}
-                className="flex items-center space-x-1 text-white text-sm font-medium hover:text-white/80 transition-colors"
-              >
-                <span className="hidden lg:inline">English</span>
-                <span className="lg:hidden">EN</span>
-                <ChevronDown className="w-3 h-3" />
-              </button>
-
-              <AnimatePresence>
-                {isLanguageOpen && (
-                  <motion.div
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    transition={{ duration: 0.2 }}
-                    className="absolute top-full mt-2 right-0 bg-black/95 backdrop-blur-xl border border-white/10 rounded-lg overflow-hidden min-w-[120px] lg:min-w-[140px]"
-                  >
-                    {languages.map((lang) => (
-                      <button
-                        key={lang.code}
-                        onClick={() => setIsLanguageOpen(false)}
-                        className="w-full px-3 lg:px-4 py-2 text-left text-white hover:bg-white/10 transition-colors flex items-center space-x-2"
-                      >
-                        <span className="text-sm">{lang.name}</span>
-                      </button>
-                    ))}
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-
             {/* Start Free Button */}
             <Link href={user ? "/dashboard" : "/auth"}>
               <Button
@@ -168,7 +128,7 @@ export default function Header() {
             transition={{ duration: 0.3 }}
             className="lg:hidden bg-black/95 backdrop-blur-xl border-t border-white/10"
           >
-            <div className="px-4 py-4 sm:py-6 space-y-1 sm:space-y-2">
+            <div className="px-4 py-4 sm:py-6">
               {navLinks.map((link, index) => (
                 <motion.div
                   key={link.name}
@@ -184,24 +144,7 @@ export default function Header() {
                     {link.name}
                   </Link>
                 </motion.div>
-              ))}
-
-              {/* Mobile Language Selector */}
-              <div className="pt-3 sm:pt-4 border-t border-white/10">
-                <div className="flex items-center space-x-2 text-white text-base sm:text-lg font-medium mb-2 sm:mb-3">
-                  <span>Language</span>
-                </div>
-                <div className="space-y-1 sm:space-y-2">
-                  {languages.map((lang) => (
-                    <button
-                      key={lang.code}
-                      className="flex items-center space-x-2 text-white/80 hover:text-white transition-colors py-1"
-                    >
-                      <span className="text-sm">{lang.name}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
+              ))}            
             </div>
           </motion.div>
         )}

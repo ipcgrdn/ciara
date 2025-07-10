@@ -735,7 +735,7 @@ export const AiSidebar = ({
         </div>
       </div>
 
-      <Card className="flex-1 bg-white/40 border-slate-200/60 flex flex-col p-0">
+      <Card className="flex-1 flex flex-col p-0">
         <CardContent className="flex-1 p-0 flex flex-col h-full overflow-hidden">
           {/* 1. 최상단 아이콘 섹션 */}
           <div className="bg-transparent p-1 flex-none border-b border-slate-200/40">
@@ -783,7 +783,7 @@ export const AiSidebar = ({
                 <div className="h-full flex flex-col">
                   <div className="flex-1 overflow-y-auto p-3">
                     {chatSessions.length === 0 ? (
-                      <div className="text-center text-slate-500 text-sm h-full flex items-center justify-center">
+                      <div className="text-center text-slate-500 text-xs h-full flex items-center justify-center">
                         저장된 채팅 기록이 없습니다
                       </div>
                     ) : (
