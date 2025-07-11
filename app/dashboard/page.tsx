@@ -323,8 +323,6 @@ export default function DashboardPage() {
 
   return (
     <main className="min-h-screen overflow-hidden">
-      <div className="fixed inset-0 w-full h-full bg-gradient-to-b from-transparent via-transparent to-black/10"></div>
-
       {/* Navigation */}
       <div className="fixed top-0 left-0 right-0 z-40 pt-4 px-4">
         <nav className="w-full max-w-6xl mx-auto bg-transparent relative">
@@ -681,8 +679,8 @@ export default function DashboardPage() {
             angle={0}
             cellSize={50}
             opacity={0.25}
-            lightLineColor="rgb(156, 163, 175)"
-            darkLineColor="rgb(156, 163, 175)"
+            lightLineColor="rgb(0, 148, 248)"
+            darkLineColor="rgb(0, 148, 248)"
             className="transform scale-110"
           />
         </div>

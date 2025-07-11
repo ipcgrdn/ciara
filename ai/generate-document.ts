@@ -52,7 +52,7 @@ async function callClaudeForDocumentGeneration(
     try {
       const response = await anthropic.messages.create({
         model: "claude-sonnet-4-20250514",
-        max_tokens: 2000, // Rate Limit 대응을 위해 더 보수적인 값으로 조정
+        max_tokens: 10000,
         temperature: 0.7,
         messages: [
           {
@@ -76,7 +76,7 @@ async function callClaudeForDocumentGeneration(
 
       // Rate Limit 오류인지 확인
       const isRateLimit =
-        error?.status === 429 ||
+        error?.status === 429 || 
         error?.message?.includes("rate limit") ||
         error?.message?.includes("Too Many Requests");
 

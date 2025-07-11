@@ -388,7 +388,16 @@ export const Messages = ({
   }, [messages]);
 
   if (messages.length === 0) {
-    return null;
+    return (
+      <div className="flex flex-col items-center justify-center gap-2 h-full">
+        <div className="flex text-sm items-center gap-2">
+          안녕하세요, Ciara 입니다.
+        </div>
+        <div className="flex text-xs items-center opacity-70">
+          어떤 문서를 작성할까요?
+        </div>
+      </div>
+    );
   }
 
   // 메시지들을 순차적으로 렌더링 (각 메시지는 독립적으로 처리)

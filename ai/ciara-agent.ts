@@ -334,7 +334,7 @@ ${
     : "No active document"
 }
 Conversation History: ${context.conversationHistory
-      .slice(-2)
+      .slice(-5)
       .map((m) => `${m.role}: ${m.content}`)
       .join("\n")}
 </context>
@@ -626,13 +626,6 @@ export class CiaraAgent {
               );
             allResponses.push(directResponse);
 
-            if (options?.onStreamChunk) {
-              options.onStreamChunk({
-                label: "FINAL",
-                content: directResponse + "\n\n",
-              });
-            }
-
             actionResults.push("직접 상담 응답 제공");
             break;
         }
@@ -680,7 +673,7 @@ export type MessageLabel =
   | "ERROR" // 모든 에러 (일반/도구/섹션/ID누락 등)
 
   // 최종 응답
-  | "FINAL"; // 최종 응답 (directResponse only)
+  | "FINAL";
 
 // 스트리밍 메시지 구조
 export interface StreamingMessage {
