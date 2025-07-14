@@ -27,21 +27,32 @@ export default function HeroSection() {
   return (
     <section className="relative min-h-screen bg-black overflow-hidden pt-24 md:pt-32">
       {/* Background images with overlay */}
+
       <div className="absolute inset-0">
-        <div className="absolute inset-0">
-          <Image
-            src="/assets/background.svg"
-            alt="Background"
-            fill
-            className="object-cover filter grayscale"
-            priority
-            quality={80}
-          />
-        </div>
+        <Image
+          src="/assets/background.svg"
+          alt="Background"
+          fill
+          className="object-cover filter grayscale"
+          priority
+          quality={80}
+        />
+      </div>
+
+      <div className="absolute top-0 md:top-24 -right-24 md:right-24 w-128 h-128 pointer-events-none">
+        <Image
+          src="/assets/futerals.svg"
+          alt="Background"
+          width={512}
+          height={512}
+          className="object-contain filter opacity-50 md:opacity-80"
+          priority
+          quality={80}
+        />
       </div>
 
       {/* Main Content Container */}
-      <div className="relative z-10 min-h-screen flex items-center mt-16">
+      <div className="relative z-10 min-h-screen flex items-center mt-12">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="min-h-screen space-y-6 sm:space-y-8">
             <div className="relative">
@@ -50,19 +61,19 @@ export default function HeroSection() {
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, delay: 0.6 }}
-                className="flex flex-col items-center justify-center"
+                className="flex flex-col items-start justify-start"
               >
-                <TypingAnimation
+                <div
                   className="text-white leading-relaxed font-instrument italic"
                   style={{
                     fontSize: "clamp(4rem, 8vw, 6rem)",
                     lineHeight: "1.1",
                   }}
-                  duration={15}
-                  startOnView={true}
                 >
-                  The AI Writing Agent
-                </TypingAnimation>
+                  The AI
+                  <br />
+                  Writing Agent
+                </div>
                 <p className="text-white text-sm sm:text-base md:text-lg lg:text-xl leading-relaxed font-montserrat font-normal text-center mt-4">
                   더 빠르고 효율적인 문서 작성 경험을 시작하세요
                 </p>
@@ -72,7 +83,7 @@ export default function HeroSection() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, delay: 1.0 }}
-                className="flex flex-row space-x-3 sm:space-x-4 items-center justify-center mt-12"
+                className="flex flex-row space-x-3 sm:space-x-4 items-start justify-start mt-12"
               >
                 <Link href="/#cta">
                   <Button
