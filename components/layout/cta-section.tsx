@@ -85,7 +85,7 @@ export default function CTASection() {
           }}
         >
           Write smarter with Ciara
-          <br className="hidden sm:block" />
+          <br />
           Start your writing revolution
         </motion.h2>
 
