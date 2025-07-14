@@ -92,7 +92,7 @@ const PricingCard: React.FC<PricingCardProps> = ({
           }
         `}
           onClick={() => {
-            router.push("/");
+            router.push("/#cta");
           }}
         >
           {buttonText}
