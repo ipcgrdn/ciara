@@ -676,12 +676,12 @@ export default function DashboardPage() {
         </motion.div>
         <div className="fixed inset-0 w-full h-full pointer-events-none">
           <RetroGrid
-            angle={0}
+            angle={32}
             cellSize={50}
-            opacity={0.25}
-            lightLineColor="rgb(0, 148, 248)"
-            darkLineColor="rgb(0, 148, 248)"
-            className="transform scale-110"
+            opacity={0.1}
+            lightLineColor="rgb(0, 0, 0)"
+            darkLineColor="rgb(0, 0, 0)"
+            className="transform"
           />
         </div>
       </div>

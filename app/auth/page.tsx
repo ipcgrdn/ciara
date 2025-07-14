@@ -77,20 +77,15 @@ export default function AuthPage() {
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="max-w-md mx-auto">
             {/* Back to Home Link */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
-              className="mb-8"
-            >
+            <div className="mb-8">
               <Link
                 href="/"
                 className="absolute top-8 left-8 hidden md:inline-flex items-center space-x-2 text-white/80 hover:text-white transition-colors duration-200"
               >
                 <ArrowLeft className="w-4 h-4" />
-                <span className="text-sm font-montserrat">Back to Home</span>
+                <span className="text-sm font-montserrat">홈으로 돌아가기</span>
               </Link>
-            </motion.div>
+            </div>
 
             {/* Main Title */}
             <motion.div
@@ -114,14 +109,14 @@ export default function AuthPage() {
               transition={{ duration: 0.8, delay: 0.4 }}
             >
               <Card className="bg-black/40 backdrop-blur-xl border border-white/10 shadow-2xl">
-                <CardContent className="p-8">
+                <CardContent className="p-4">
                   <div className="space-y-6">
                     <div className="text-center space-y-2">
                       <h2 className="text-xl font-semibold font-montserrat text-white">
                         Sign in to continue
                       </h2>
                       <p className="text-white/60 text-sm">
-                        Start your intelligent writing journey
+                        더 빠르고 효율적인 문서 작성 경험을 시작하세요
                       </p>
                     </div>
 
@@ -168,19 +163,19 @@ export default function AuthPage() {
                     </Button>
 
                     <div className="text-center text-xs text-white/40 pt-4">
-                      By signing in, you agree to our{" "}
+                      로그인 시, 약관에 동의하게 됩니다.{" "}
                       <Link
                         href="/terms"
                         className="underline hover:text-white/60"
                       >
-                        Terms of Service
+                        이용약관
                       </Link>{" "}
-                      and{" "}
+                      및{" "}
                       <Link
                         href="/privacy"
                         className="underline hover:text-white/60"
                       >
-                        Privacy Policy
+                        개인정보처리방침
                       </Link>
                     </div>
                   </div>

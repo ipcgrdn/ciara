@@ -1,15 +1,59 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import Image from "next/image";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { useRouter } from "next/navigation";
+import { ArrowRight } from "lucide-react";
+import { supabase } from "@/lib/supabase";
+import Confetti from "react-confetti";
 
 export default function CTASection() {
-  const router = useRouter();
+  const [email, setEmail] = useState<string>("");
+  const [showConfetti, setShowConfetti] = useState<boolean>(false);
+
+  const handlePreRegister = async () => {
+    if (!email) {
+      alert("이메일을 입력해주세요.");
+      return;
+    }
+    // 이메일 형식 간단 검증
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      alert("올바른 이메일 형식을 입력해주세요.");
+      return;
+    }
+    // Supabase에 저장
+    const { error } = await supabase.from("register").insert([{ email }]);
+    if (error) {
+      if (error.code === "23505") {
+        alert("이미 등록된 이메일입니다.");
+      } else {
+        alert("등록 중 오류가 발생했습니다. 다시 시도해주세요.");
+      }
+      return;
+    }
+    setShowConfetti(true);
+    setEmail("");
+    setTimeout(() => setShowConfetti(false), 3000);
+  };
+
   return (
-    <section className="relative min-h-screen bg-black overflow-hidden">
+    <section id="cta" className="relative min-h-screen bg-black overflow-hidden">
+      {/* Confetti & 감사 메시지 오버레이 */}
+      {showConfetti && (
+        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/60 backdrop-blur-lg">
+          <Confetti
+            width={typeof window !== "undefined" ? window.innerWidth : 1920}
+            height={typeof window !== "undefined" ? window.innerHeight : 1080}
+            numberOfPieces={400}
+            recycle={false}
+          />
+          <div className="text-white text-2xl font-bold mt-8 text-center drop-shadow-lg">
+            🎉 사전 등록이 완료되었습니다!
+          </div>
+        </div>
+      )}
       {/* Background Image */}
       <motion.div
         initial={{ opacity: 0, scale: 1.1 }}
@@ -34,36 +78,73 @@ export default function CTASection() {
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.2 }}
           viewport={{ once: true }}
-          className="text-white text-center font-semibold mb-6 sm:mb-8 max-w-6xl leading-tight font-montserrat"
+          className="text-white text-center mb-6 sm:mb-8 max-w-6xl leading-tight font-instrument"
           style={{
             fontSize: "clamp(1.5rem, 6vw, 4.375rem)",
             lineHeight: "1.2",
           }}
         >
-          Ready to revolutionize
+          Write smarter with Ciara
           <br className="hidden sm:block" />
-          your writing process?
+          Start your writing revolution
         </motion.h2>
 
-        {/* CTA Button */}
+        {/* CTA 이메일 입력 및 버튼 */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.6 }}
           viewport={{ once: true }}
+          className="w-full flex flex-col items-center gap-4 mt-8"
         >
-          <Button
-            className="bg-[#a3cbff] hover:bg-[#8bb8ff] text-black font-semibold border-2 border-[#3c3c3c] transition-all duration-300 hover:scale-105 font-montserrat rounded-lg sm:rounded-xl px-4 sm:px-6 lg:px-8 py-3 sm:py-4 lg:py-6"
-            style={{
-              fontSize: "clamp(0.875rem, 3vw, 1.5rem)",
-            }}
-            size="lg"
-            onClick={() => {
-              router.push("/auth");
-            }}
+          <div className="flex flex-row items-center gap-2 w-full max-w-xs sm:max-w-xl">
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="이메일을 입력하세요"
+              className="flex-1 rounded-lg border-2 border-[#3c3c3c] bg-transparent text-white placeholder-white placeholder:opacity-50 px-4 py-3 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-white transition-all"
+              style={{
+                fontSize: "clamp(0.4rem, 2vw, 1.2rem)",
+                lineHeight: "1.5",
+              }}
+            />
+            <Button
+              className="bg-[#a3cbff] hover:bg-[#8bb8ff] text-black font-semibold border-2 border-[#3c3c3c] transition-all duration-300 hover:scale-105 font-montserrat rounded-lg sm:rounded-xl px-4 sm:px-6 lg:px-8 py-3 sm:py-4 lg:py-6 text-base sm:text-lg"
+              size="lg"
+              onClick={handlePreRegister}
+              style={{
+                fontSize: "clamp(0.4rem, 2vw, 1.2rem)",
+                lineHeight: "1.5",
+                padding:
+                  "clamp(0.62rem, 1.7vw, 1.6rem) clamp(0.95rem, 2.5vw, 1.7rem)",
+              }}
+            >
+              사전 등록하기
+              <ArrowRight className="ml-2 h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6" />
+            </Button>
+          </div>
+          {/* 오픈채팅 참가하기 버튼 */}
+          <a
+            href="https://open.kakao.com/o/gtiAgUGh"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-full max-w-xs sm:max-w-xl"
           >
-            Start Your Writing Revolution
-          </Button>
+            <Button
+              className="bg-[#a3cbff] hover:bg-[#8bb8ff] text-black font-semibold border-2 border-[#3c3c3c] transition-all duration-300 hover:scale-105 font-montserrat rounded-lg sm:rounded-xl px-4 sm:px-6 lg:px-8 py-3 sm:py-4 lg:py-6 text-base sm:text-lg w-full mt-2"
+              size="lg"
+              style={{
+                fontSize: "clamp(0.4rem, 2vw, 1.2rem)",
+                lineHeight: "1.5",
+                padding:
+                  "clamp(0.62rem, 1.7vw, 1.6rem) clamp(0.95rem, 2.5vw, 1.7rem)",
+              }}
+            >
+              오픈채팅 참가하기
+              <ArrowRight className="ml-2 h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6" />
+            </Button>
+          </a>
         </motion.div>
 
         {/* Decorative Images - Simplified for mobile */}

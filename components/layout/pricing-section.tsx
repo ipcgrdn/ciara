@@ -60,7 +60,7 @@ const PricingCard: React.FC<PricingCardProps> = ({
           {price}
         </p>
         {price.includes("/") && (
-          <p className="text-xs sm:text-sm text-white/70 mt-1">per month</p>
+          <p className="text-xs sm:text-sm text-white/70 mt-1">/ 월</p>
         )}
       </div>
 
@@ -92,7 +92,7 @@ const PricingCard: React.FC<PricingCardProps> = ({
           }
         `}
           onClick={() => {
-            router.push("/auth");
+            router.push("/");
           }}
         >
           {buttonText}
@@ -110,37 +110,26 @@ const PricingSection: React.FC = () => {
     {
       title: "Free",
       price: "$0",
-      features: [
-        "Smart document editor",
-        "10 AI conversations/month",
-        "Up to 3 documents",
-        "Basic file uploads",
-      ],
-      buttonText: "Start Writing Free",
+      features: ["최초 1K 토큰 지원", "제한된 문서 작성", "제한된 파일 업로드"],
+      buttonText: "무료로 시작하기",
       isPopular: false,
     },
     {
       title: "Pro",
-      price: "$9.99/mo",
+      price: "$10",
       features: [
-        "Unlimited document editing",
-        "Unlimited AI conversations",
-        "Unlimited documents",
-        "Advanced file management (50MB)",
-        "Auto-generated outlines",
-        "Priority support",
-        "Collaboration features (coming soon)",
+        "월 10K 토큰 지원",
+        "무제한 문서 작성",
+        "무제한 파일 업로드",
+        "우선 지원",
       ],
-      buttonText: "Upgrade to Pro",
+      buttonText: "Pro로 업그레이드",
       isPopular: true,
     },
   ];
 
   return (
-    <section className="relative bg-black overflow-hidden py-12 sm:py-16 lg:py-24">
-      {/* Background Effects */}
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(59,130,246,0.05),transparent_70%)]" />
-
+    <section id="pricing" className="relative bg-black overflow-hidden py-12 sm:py-16 lg:py-24">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         {/* Header */}
         <div className="text-center mb-8 sm:mb-12 lg:mb-20">
@@ -155,20 +144,20 @@ const PricingSection: React.FC = () => {
               lineHeight: "1.1",
             }}
           >
-            Simple pricing,
+            Simple Pricing,
             <br className="sm:block" />
-            <span className="text-blue-200">infinite possibilities</span>
+            <span className="text-blue-200">Infinite Possibilities</span>
           </motion.h2>
           <motion.p
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.2 }}
             viewport={{ once: true }}
-            className="text-sm sm:text-base lg:text-xl text-white/80 text-center max-w-3xl mx-auto leading-relaxed px-4"
+            className="text-sm sm:text-base lg:text-lg text-white/80 text-center max-w-3xl mx-auto leading-relaxed px-4"
           >
-            Choose your writing superpower. Start free, upgrade when ready.
+            무료로 시작하고 필요에 따라 업그레이드하세요.
             <br className="hidden sm:block" />
-            No hidden fees, no commitment - just pure writing excellence.
+            언제든 취소할 수 있습니다
           </motion.p>
         </div>
 
@@ -183,23 +172,6 @@ const PricingSection: React.FC = () => {
             </div>
           ))}
         </div>
-
-        {/* Additional Info */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.4 }}
-          viewport={{ once: true }}
-          className="text-center mt-8 sm:mt-12 lg:mt-16 px-4"
-        >
-          <p className="text-xs sm:text-sm lg:text-base text-white/60 mb-2 sm:mb-4">
-            7-day free trial • Cancel anytime • No setup fees
-          </p>
-          <p className="text-xs lg:text-sm text-white/40">
-            All plans include our revolutionary AI writing engine and regular
-            feature updates
-          </p>
-        </motion.div>
       </div>
     </section>
   );

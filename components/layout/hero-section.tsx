@@ -1,12 +1,11 @@
 "use client";
 
 import { motion } from "framer-motion";
-import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import TypingAnimation from "@/components/ui/typing-animation";
-import { useAuth } from "@/contexts/AuthContext";
 import { ArrowRight } from "lucide-react";
+import Link from "next/link";
 
 interface StatCardProps {
   number: string;
@@ -25,10 +24,8 @@ const StatCard: React.FC<StatCardProps> = ({ number, label }) => (
 );
 
 export default function HeroSection() {
-  const { user } = useAuth();
-
   return (
-    <section className="relative min-h-screen bg-black overflow-hidden pt-24">
+    <section className="relative min-h-screen bg-black overflow-hidden pt-24 md:pt-32">
       {/* Background images with overlay */}
       <div className="absolute inset-0">
         <div className="absolute inset-0">
@@ -42,25 +39,8 @@ export default function HeroSection() {
         </div>
       </div>
 
-      <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-4/5">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 1.2, delay: 0.4 }}
-          className="relative w-128 h-128 xl:w-200 xl:h-200"
-        >
-          <Image
-            src="/assets/futerals.svg"
-            alt="Futerals"
-            fill
-            className="object-contain opacity-30 md:opacity-100"
-            priority
-          />
-        </motion.div>
-      </div>
-
       {/* Main Content Container */}
-      <div className="relative z-10 min-h-screen flex items-center">
+      <div className="relative z-10 min-h-screen flex items-center mt-16">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="min-h-screen space-y-6 sm:space-y-8">
             <div className="relative">
@@ -69,127 +49,90 @@ export default function HeroSection() {
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, delay: 0.6 }}
+                className="flex flex-col items-center justify-center"
               >
                 <TypingAnimation
-                  className="text-white leading-tight font-montserrat font-medium"
+                  className="text-white leading-tight font-instrument"
                   style={{
-                    fontSize: "clamp(1.75rem, 8vw, 5rem)",
+                    fontSize: "clamp(2rem, 8vw, 5rem)",
                     lineHeight: "1.1",
                   }}
-                  duration={30}
+                  duration={15}
                   startOnView={true}
                 >
-                  THE FUTURE OF
+                  The AI Writing Agent
                 </TypingAnimation>
-
-                <TypingAnimation
-                  className="text-white leading-tight font-montserrat font-medium bg-blue-300 bg-clip-text drop-shadow-[0_0_15px_rgba(59,130,246,0.5)]"
-                  style={{
-                    fontSize: "clamp(1.75rem, 8vw, 5rem)",
-                    lineHeight: "1.1",
-                  }}
-                  duration={30}
-                  startOnView={true}
-                >
-                  WRITING AGENT
-                </TypingAnimation>
-
-                <TypingAnimation
-                  className="text-white leading-tight font-montserrat font-medium"
-                  style={{
-                    fontSize: "clamp(1.75rem, 8vw, 5rem)",
-                    lineHeight: "1.1",
-                  }}
-                  duration={30}
-                  startOnView={true}
-                >
-                  IS HERE
-                </TypingAnimation>
+                <p className="text-white text-sm sm:text-base md:text-lg lg:text-xl leading-relaxed font-montserrat font-normal text-center mt-4">
+                  더 빠르고 효율적인 문서 작성 경험을 시작하세요
+                </p>
               </motion.div>
-            </div>
 
-            {/* Description */}
-            <div className="flex flex-col lg:flex-row justify-between mt-8 sm:mt-12 space-y-8 lg:space-y-0">
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, delay: 0.8 }}
-              >
-                <p className="text-sm sm:text-base md:text-lg lg:text-xl text-white/90 leading-relaxed max-w-xl">
-                  The AI writing assistant that finally understands{" "}
-                  <br className="hidden sm:block" />
-                  your entire document. From research papers{" "}
-                  <br className="hidden sm:block" />
-                  to novels - write with infinite context.
-                </p>
-              </motion.div>
-              {/* CIARA Section */}
-              <motion.div
-                initial={{ opacity: 0, x: 50 }}
-                animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.8, delay: 1.0 }}
-                className="text-left lg:text-right space-y-4 sm:space-y-6"
+                className="flex flex-row space-x-3 sm:space-x-4 items-center justify-center mt-12"
               >
-                <h2
-                  className="text-white tracking-wider font-montserrat font-bold"
-                  style={{
-                    fontSize: "clamp(1rem, 3vw, 1.25rem)",
-                    fontWeight: 700,
-                    letterSpacing: "clamp(-3px, -1vw, -6.2px)",
-                  }}
+                <Link href="/#cta">
+                  <Button
+                    size="lg"
+                    className="text-white bg-transparent border-white hover:bg-transparent transition-all duration-300 hover:scale-105 font-semibold border-2"
+                    style={{
+                      fontSize: "clamp(0.5rem, 4vw, 1.2rem)",
+                      lineHeight: "1.5",
+                      padding:
+                        "clamp(0.5rem, 2vw, 1rem) clamp(0.75rem, 3vw, 1.5rem)",
+                    }}
+                  >
+                    사전 등록하기
+                    <ArrowRight className="ml-2 h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6" />
+                  </Button>
+                </Link>
+
+                {/* 오픈채팅 참가하기 버튼 CTASection 스타일로 */}
+                <a
+                  href="https://open.kakao.com/o/gtiAgUGh"
+                  target="_blank"
+                  rel="noopener noreferrer"
                 >
-                  ＣＩＡＲＡ
-                </h2>
-                <p className="text-white/80 max-w-sm lg:ml-auto leading-relaxed text-sm sm:text-base">
-                  Beyond the limitations of traditional AI tools.{" "}
-                  <br className="hidden sm:block" />
-                  Understanding entire document structure{" "}
-                  <br className="hidden sm:block" />
-                  with continuous conversational intelligence.
-                </p>
+                  <Button
+                    size="lg"
+                    className="text-white bg-transparent border-white hover:bg-transparent transition-all duration-300 hover:scale-105 font-semibold border-2"
+                    style={{
+                      fontSize: "clamp(0.5rem, 4vw, 1.2rem)",
+                      lineHeight: "1.5",
+                      padding:
+                        "clamp(0.5rem, 2vw, 1rem) clamp(0.75rem, 3vw, 1.5rem)",
+                    }}
+                  >
+                    오픈채팅 참가하기
+                    <ArrowRight className="ml-2 h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6" />
+                  </Button>
+                </a>
               </motion.div>
+
+              {/* Demo Video */}
+              <div className="w-full flex justify-center mt-24">
+                <div className="w-full max-w-8xl aspect-video rounded-2xl overflow-hidden shadow-lg">
+                  <video
+                    src="https://tvcgnt7ylycddtrr.public.blob.vercel-storage.com/full.mp4"
+                    autoPlay
+                    loop
+                    muted
+                    playsInline
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      objectFit: "cover",
+                    }}
+                  />
+                </div>
+              </div>
             </div>
-
-            {/* CTA Buttons */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 1.0 }}
-              className="flex flex-col space-y-3 sm:space-y-4 items-start"
-            >
-              <Link href={user ? "/dashboard" : "/auth"}>
-                <Button
-                  size="lg"
-                  className="text-white bg-transparent border-white hover:bg-transparent transition-all duration-300 hover:scale-105 font-semibold underline"
-                  style={{
-                    fontSize: "clamp(1rem, 4vw, 1.875rem)",
-                    lineHeight: "1.5",
-                    padding: "clamp(0.75rem, 2vw, 2rem) clamp(1rem, 3vw, 2rem)",
-                  }}
-                >
-                  Get Started
-                  <ArrowRight className="ml-2 h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6" />
-                </Button>
-              </Link>
-
-              <Button
-                size="lg"
-                className="text-white bg-transparent border-white hover:bg-transparent transition-all duration-300 hover:scale-105 font-semibold underline"
-                style={{
-                  fontSize: "clamp(1rem, 4vw, 1.875rem)",
-                  lineHeight: "1.5",
-                  padding: "clamp(0.75rem, 2vw, 2rem) clamp(1rem, 3vw, 2rem)",
-                }}
-              >
-                Learn More
-                <ArrowRight className="ml-2 h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6" />
-              </Button>
-            </motion.div>
           </div>
         </div>
       </div>
 
-      {/* WHO WE ARE Section */}
       <div className="relative z-10 bg-transparent backdrop-blur-md rounded-t-4xl w-full">
         <div className="max-w-[1728px] mx-auto px-4 sm:px-8 lg:px-16 xl:px-[68px] py-12 sm:py-16 lg:py-24 xl:py-[102px]">
           {/* Main title */}
@@ -204,7 +147,7 @@ export default function HeroSection() {
               lineHeight: "0.9",
             }}
           >
-            WHO WE ARE
+            WHY CIARA
           </motion.h2>
 
           {/* Content layout */}
@@ -216,23 +159,42 @@ export default function HeroSection() {
             className="flex flex-col lg:flex-row justify-between items-start mb-12 sm:mb-16 lg:mb-24 xl:mb-[133px] space-y-6 lg:space-y-0 lg:space-x-8"
           >
             {/* Left description */}
-            <div className="w-full lg:w-[442px]">
-              <p className="text-white font-montserrat font-normal text-base sm:text-lg lg:text-xl xl:text-[22px] leading-relaxed">
-                Born from the vision of &quot;Cursor for Writing&quot; - CIARA
-                reimagines how we create long-form content.
+            <div className="w-full lg:w-[440px]">
+              <p className="text-white font-montserrat font-normal text-base sm:text-lg leading-relaxed mb-6">
+                "10페이지 쓰다 보면 1페이지에 뭘 썼는지 까먹어요."
+                <br />
+                "앞뒤 내용이 안 맞아도 모르겠어요."
+                <br />
+                "같은 말을 계속 반복하는 것 같아요."
+              </p>
+              <p className="text-white font-montserrat font-normal text-base sm:text-lg leading-relaxed">
+                긴 문서를 쓰는 모든 사람들의 진짜 고민을 들었습니다.
+                <br />
+                문제는 도구가 아니라 <strong>기억과 일관성</strong>이었습니다.
               </p>
             </div>
 
             {/* Right description */}
-            <div className="w-full lg:w-[420px]">
-              <p className="text-white font-montserrat font-normal text-sm sm:text-base lg:text-lg xl:text-[20px] leading-relaxed">
-                Outline-driven indexing meets persistent AI conversations.
-                Maintain perfect consistency across documents of any length.
+            <div className="w-full lg:w-[440px]">
+              <p className="text-white font-montserrat font-normal text-base sm:text-lg leading-relaxed mb-6">
+                우리는 화려한 기능보다는 <strong>진짜 필요한 것</strong>에
+                집중했습니다.
+                <br />
+                당신의 글 전체를 기억하고, 앞뒤 맥락을 맞춰주고,
+                <br />
+                알아서 문서를 완성해주는 AI.
+              </p>
+              <p className="text-white font-montserrat font-normal text-base sm:text-lg leading-relaxed">
+                당신의 시간을 되돌려드리겠습니다.
+                <br />
+                더 이상 키보드 앞에서 고민하지 마세요.
+                <br />
+                <strong>Ciara에게 맡겨보세요.</strong>
               </p>
             </div>
           </motion.div>
 
-          {/* Statistics cards */}
+          {/* Pain points cards */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -240,9 +202,9 @@ export default function HeroSection() {
             viewport={{ once: true }}
             className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-8 border-t border-white pt-8 sm:pt-12 border-b pb-8 sm:pb-12"
           >
-            <StatCard number="∞" label="Context Length" />
-            <StatCard number="10+" label="File Formats" />
-            <StatCard number="24/7" label="AI Partner" />
+            <StatCard number="5x" label="Context Length" />
+            <StatCard number="10x" label="Faster Writing" />
+            <StatCard number="24/7" label="AI Agent" />
             <StatCard number="1%" label="Effort Needed" />
           </motion.div>
         </div>

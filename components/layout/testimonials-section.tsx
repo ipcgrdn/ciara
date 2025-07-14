@@ -61,7 +61,7 @@ const TestimonialsSection: React.FC = () => {
   ];
 
   return (
-    <section className="relative bg-black py-12 sm:py-16 lg:py-24">
+    <section className="relative bg-black py-12 sm:py-16 lg:py-24 hidden">
       <div className="container mx-auto px-4 sm:px-6 lg:px-16 xl:px-24">
         {/* Main heading */}
         <motion.div

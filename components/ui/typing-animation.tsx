@@ -49,18 +49,6 @@ export default function TypingAnimation({
     >
       <Component className={cn(className)} style={style}>
         {displayedText}
-        <motion.span
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{
-            duration: 0.8,
-            repeat: Infinity,
-            repeatType: "reverse",
-          }}
-          className="inline-block"
-        >
-          |
-        </motion.span>
       </Component>
     </motion.div>
   );

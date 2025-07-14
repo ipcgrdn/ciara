@@ -23,10 +23,10 @@ export default function Header() {
   }, []);
 
   const navLinks = [
-    { name: "About", href: "#about" },
-    { name: "Features", href: "#features" },
-    { name: "Pricing", href: "#pricing" },
-    { name: "Contact", href: "#contact" },
+    { name: "소개", href: "#about" },
+    { name: "기능", href: "#features" },
+    { name: "가격", href: "#pricing" },
+    { name: "문의", href: "https://open.kakao.com/o/gtiAgUGh" },
   ];
 
   return (
@@ -52,8 +52,11 @@ export default function Header() {
                 alt="CIARA"
                 width={32}
                 height={32}
-                className="w-32 h-32"
+                className="w-24 h-24 sm:w-32 sm:h-32"
               />
+              <span className="bg-transparent text-white text-xs font-semibold font-instrument align-middle select-none hidden sm:block">
+                Beta
+              </span>
             </Link>
           </motion.div>
 
@@ -62,7 +65,7 @@ export default function Header() {
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.1 }}
-            className="hidden lg:flex items-center space-x-6 xl:space-x-8"
+            className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10 hidden lg:flex items-center space-x-6 xl:space-x-8"
           >
             {navLinks.map((link, index) => (
               <motion.div
@@ -89,16 +92,16 @@ export default function Header() {
             className="flex items-center space-x-2 sm:space-x-4"
           >
             {/* Start Free Button */}
-            <Link href={user ? "/dashboard" : "/auth"}>
+            <Link href={user ? "/dashboard" : "/#cta"}>
               <Button
                 size="sm"
-                className="bg-white text-black hover:bg-white/90 font-medium px-3 sm:px-6 py-1.5 sm:py-2 text-sm rounded-full transition-all duration-200 hover:scale-105"
+                className="bg-white text-black hover:bg-white/90 font-medium px-3 sm:px-6 py-1.5 sm:py-2 text-xs sm:text-sm rounded-full transition-all duration-200 hover:scale-105"
               >
                 <span className="hidden sm:inline">
-                  {user ? "Dashboard" : "Start Free"}
+                  {user ? "Dashboard" : "사전 등록하기"}
                 </span>
                 <span className="sm:hidden">
-                  {user ? "Dashboard" : "Start"}
+                  {user ? "Dashboard" : "사전 등록하기"}
                 </span>
               </Button>
             </Link>
@@ -144,7 +147,7 @@ export default function Header() {
                     {link.name}
                   </Link>
                 </motion.div>
-              ))}            
+              ))}
             </div>
           </motion.div>
         )}
