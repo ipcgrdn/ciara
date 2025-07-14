@@ -161,11 +161,11 @@ export default function HeroSection() {
             {/* Left description */}
             <div className="w-full lg:w-[440px]">
               <p className="text-white font-montserrat font-normal text-base sm:text-lg leading-relaxed mb-6">
-                "10페이지 쓰다 보면 1페이지에 뭘 썼는지 까먹어요."
+                &quot;10페이지 쓰다 보면 1페이지에 뭘 썼는지 까먹어요.&quot;
                 <br />
-                "앞뒤 내용이 안 맞아도 모르겠어요."
+                &quot;앞뒤 내용이 안 맞아도 모르겠어요.&quot;
                 <br />
-                "같은 말을 계속 반복하는 것 같아요."
+                &quot;같은 말을 계속 반복하는 것 같아요.&quot;
               </p>
               <p className="text-white font-montserrat font-normal text-base sm:text-lg leading-relaxed">
                 긴 문서를 쓰는 모든 사람들의 진짜 고민을 들었습니다.
