@@ -35,6 +35,7 @@ export default function HeroSection() {
             fill
             className="object-cover filter grayscale"
             priority
+            quality={80}
           />
         </div>
       </div>
@@ -52,9 +53,9 @@ export default function HeroSection() {
                 className="flex flex-col items-center justify-center"
               >
                 <TypingAnimation
-                  className="text-white leading-tight font-instrument"
+                  className="text-white leading-relaxed font-instrument italic"
                   style={{
-                    fontSize: "clamp(2rem, 8vw, 5rem)",
+                    fontSize: "clamp(4rem, 8vw, 6rem)",
                     lineHeight: "1.1",
                   }}
                   duration={15}
