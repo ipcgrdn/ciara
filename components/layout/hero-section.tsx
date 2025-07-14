@@ -56,12 +56,7 @@ export default function HeroSection() {
           <div className="min-h-screen space-y-6 sm:space-y-8">
             <div className="relative">
               {/* Main Title with Typing Animation */}
-              <motion.div
-                initial={{ opacity: 0, y: 30 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, delay: 0.6 }}
-                className="flex flex-col items-start justify-start"
-              >
+              <div className="flex flex-col items-start justify-start ml-0 md:ml-12">
                 <div
                   className="text-white leading-relaxed font-instrument italic"
                   style={{
@@ -76,14 +71,9 @@ export default function HeroSection() {
                 <p className="text-white text-sm sm:text-base md:text-lg lg:text-xl leading-relaxed font-montserrat font-normal text-center mt-4">
                   더 빠르고 효율적인 문서 작성 경험을 시작하세요
                 </p>
-              </motion.div>
+              </div>
 
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, delay: 1.0 }}
-                className="flex flex-row space-x-3 sm:space-x-4 items-start justify-start mt-12"
-              >
+              <div className="flex flex-row space-x-3 sm:space-x-4 items-start justify-start mt-12 ml-0 md:ml-12">
                 <Link href="/#cta">
                   <Button
                     size="lg"
@@ -120,7 +110,7 @@ export default function HeroSection() {
                     <ArrowRight className="ml-2 h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6" />
                   </Button>
                 </a>
-              </motion.div>
+              </div>
 
               {/* Demo Video */}
               <div className="w-full flex justify-center mt-24">
