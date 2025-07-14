@@ -91,7 +91,7 @@ const ServicesSection: React.FC = () => {
       description:
         "이제 맥락을 잃지 마세요. Ciara는 전체 문서를 기억하여, 앞뒤 내용이 일치하지 않는 문제를 해결합니다.",
       filePath:
-        "https://tvcgnt7ylycddtrr.public.blob.vercel-storage.com/infinite.mp4",
+        "https://tvcgnt7ylycddtrr.public.blob.vercel-storage.com/infinite-video.mp4",
       fileType: "video",
     },
     {
@@ -99,7 +99,7 @@ const ServicesSection: React.FC = () => {
       description:
         "Ciara는 목차 기반으로 작동합니다. 복잡한 문서도 손쉽게 탐색하고, AI가 항상 섹션별 맥락을 유지합니다.",
       filePath:
-        "https://tvcgnt7ylycddtrr.public.blob.vercel-storage.com/index.mp4",
+        "https://tvcgnt7ylycddtrr.public.blob.vercel-storage.com/index-video.mp4",
       fileType: "video",
       isReversed: true,
     },

@@ -115,7 +115,7 @@ export default function HeroSection() {
               <div className="w-full flex justify-center mt-24">
                 <div className="w-full max-w-8xl aspect-video rounded-2xl overflow-hidden shadow-lg">
                   <video
-                    src="https://tvcgnt7ylycddtrr.public.blob.vercel-storage.com/full.mp4"
+                    src="https://tvcgnt7ylycddtrr.public.blob.vercel-storage.com/full-video.mp4"
                     autoPlay
                     loop
                     muted
