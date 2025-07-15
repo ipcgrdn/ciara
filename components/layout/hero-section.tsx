@@ -38,42 +38,28 @@ export default function HeroSection() {
         />
       </div>
 
-      <div className="absolute top-0 md:top-24 -right-24 md:right-24 w-128 h-128 pointer-events-none">
-        <Image
-          src="/assets/futerals.svg"
-          alt="Background"
-          width={512}
-          height={512}
-          className="object-contain filter opacity-50 md:opacity-80"
-          priority
-          quality={80}
-        />
-      </div>
-
       {/* Main Content Container */}
       <div className="relative z-10 min-h-screen flex items-center mt-12">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="min-h-screen space-y-6 sm:space-y-8">
             <div className="relative">
               {/* Main Title with Typing Animation */}
-              <div className="flex flex-col items-start justify-start ml-0 md:ml-12">
+              <div className="flex flex-col items-center justify-center">
                 <div
-                  className={`text-white font-montserrat font-light`}
+                  className={`text-white font-montserrat font-bold text-center`}
                   style={{
                     fontSize: "clamp(4rem, 8vw, 6rem)",
                     lineHeight: "1.1",
                   }}
                 >
-                  The AI
-                  <br />
-                  Writing Agent
+                  The AI Writing Agent
                 </div>
                 <p className="text-white text-sm sm:text-base md:text-lg lg:text-xl leading-relaxed font-montserrat font-normal text-center mt-4">
                   더 빠르고 효율적인 문서 작성 경험을 시작하세요
                 </p>
               </div>
 
-              <div className="flex flex-row space-x-3 sm:space-x-4 items-start justify-start mt-12 ml-0 md:ml-12">
+              <div className="flex flex-row space-x-3 sm:space-x-4 items-center justify-center mt-12">
                 <Link href="/#cta">
                   <Button
                     size="lg"
