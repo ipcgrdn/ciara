@@ -91,7 +91,7 @@ const ServicesSection: React.FC = () => {
       description:
         "이제 맥락을 잃지 마세요. Ciara는 전체 문서를 기억하여, 앞뒤 내용이 일치하지 않는 문제를 해결합니다.",
       filePath:
-        "https://tvcgnt7ylycddtrr.public.blob.vercel-storage.com/infinite-video.mp4",
+        "/video/infinite.mp4",
       fileType: "video",
     },
     {
@@ -99,7 +99,7 @@ const ServicesSection: React.FC = () => {
       description:
         "Ciara는 목차 기반으로 작동합니다. 복잡한 문서도 손쉽게 탐색하고, AI가 항상 섹션별 맥락을 유지합니다.",
       filePath:
-        "https://tvcgnt7ylycddtrr.public.blob.vercel-storage.com/index-video.mp4",
+        "/video/index.mp4",
       fileType: "video",
       isReversed: true,
     },
@@ -160,13 +160,13 @@ const ServicesSection: React.FC = () => {
                 최고의 작업 환경을 만듭니다.
               </p>
               <div className="flex flex-col gap-y-6 sm:gap-y-8 lg:gap-y-12">
-                <p className="text-lg sm:text-xl lg:text-2xl xl:text-3xl font-montserrat font-medium text-black underline">
+                <p className="text-lg sm:text-xl lg:text-2xl xl:text-3xl font-montserrat font-medium text-black">
                   1. Infinite Context
                 </p>
-                <p className="text-lg sm:text-xl lg:text-2xl xl:text-3xl font-montserrat font-medium text-black underline">
+                <p className="text-lg sm:text-xl lg:text-2xl xl:text-3xl font-montserrat font-medium text-black">
                   2. Intelligent Document Indexing
                 </p>
-                <p className="text-lg sm:text-xl lg:text-2xl xl:text-3xl font-montserrat font-medium text-black underline">
+                <p className="text-lg sm:text-xl lg:text-2xl xl:text-3xl font-montserrat font-medium text-black">
                   3. Unified Knowledge Management
                 </p>
               </div>

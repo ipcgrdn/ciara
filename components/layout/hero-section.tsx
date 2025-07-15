@@ -58,7 +58,7 @@ export default function HeroSection() {
               {/* Main Title with Typing Animation */}
               <div className="flex flex-col items-start justify-start ml-0 md:ml-12">
                 <div
-                  className="text-white leading-relaxed font-instrument italic"
+                  className={`text-white font-montserrat font-light`}
                   style={{
                     fontSize: "clamp(4rem, 8vw, 6rem)",
                     lineHeight: "1.1",
@@ -116,7 +116,7 @@ export default function HeroSection() {
               <div className="w-full flex justify-center mt-24">
                 <div className="w-full max-w-8xl aspect-video rounded-2xl overflow-hidden shadow-lg">
                   <video
-                    src="https://tvcgnt7ylycddtrr.public.blob.vercel-storage.com/full-video.mp4"
+                    src="/video/full.mp4"
                     autoPlay
                     loop
                     muted

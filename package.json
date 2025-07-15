@@ -52,7 +52,6 @@
     "@tiptap/extension-underline": "^2.23.0",
     "@tiptap/react": "^2.24.2",
     "@tiptap/starter-kit": "^2.24.2",
-    "@vercel/blob": "^1.1.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "framer-motion": "^12.23.0",
