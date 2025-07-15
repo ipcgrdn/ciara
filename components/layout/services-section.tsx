@@ -35,7 +35,7 @@ const ServiceCard: React.FC<ServiceCardProps> = ({
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
           viewport={{ once: true }}
-          className="font-montserrat font-semibold mb-3 sm:mb-4 lg:mb-6 underline"
+          className="font-montserrat font-semibold mb-3 sm:mb-4 lg:mb-6"
           style={{
             fontSize: "clamp(1.5rem, 4vw, 2.5rem)",
             lineHeight: "1.2",

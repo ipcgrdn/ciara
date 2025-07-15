@@ -78,7 +78,7 @@ export default function CTASection() {
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.2 }}
           viewport={{ once: true }}
-          className="text-white text-center mb-6 sm:mb-8 max-w-6xl leading-tight font-instrument italic"
+          className="text-white text-center mb-6 sm:mb-8 max-w-6xl leading-tight font-montserrat font-semibold"
           style={{
             fontSize: "clamp(1.5rem, 6vw, 4.375rem)",
             lineHeight: "1.2",
