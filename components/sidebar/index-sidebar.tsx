@@ -414,7 +414,7 @@ export function IndexSidebar({
                             {getFileIcon(item.file_type)}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <div className="text-xs font-medium text-slate-700 truncate">
+                            <div className="text-xs font-medium text-slate-700">
                               {item.original_filename}
                             </div>
                             <div className="text-xs text-slate-500">
