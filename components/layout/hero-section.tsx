@@ -84,7 +84,7 @@ export default function HeroSection() {
                 >
                   <Button
                     size="lg"
-                    className="text-white bg-transparent border-white hover:bg-transparent transition-all duration-300 hover:scale-105 font-semibold border-2"
+                    className="text-white bg-transparent border-white hover:bg-transparent transition-all duration-300 hover:scale-105 font-semibold border-2 hidden"
                     style={{
                       fontSize: "clamp(0.5rem, 4vw, 1.2rem)",
                       lineHeight: "1.5",

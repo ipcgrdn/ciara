@@ -110,7 +110,7 @@ export default function CTASection() {
               }}
             />
             <Button
-              className="bg-[#a3cbff] hover:bg-[#8bb8ff] text-black font-semibold border-2 border-[#3c3c3c] transition-all duration-300 hover:scale-105 font-montserrat rounded-lg sm:rounded-xl px-4 sm:px-6 lg:px-8 py-3 sm:py-4 lg:py-6 text-base sm:text-lg"
+              className="bg-[#a3cbff] hover:bg-[#8bb8ff] text-black font-semibold border-2 border-[#3c3c3c] transition-all duration-300 hover:scale-105 font-montserrat rounded-lg sm:rounded-xl px-4 sm:px-6 lg:px-8 py-3 sm:py-4 lg:py-6 text-base sm:text-lg hidden"
               size="lg"
               onClick={handlePreRegister}
               style={{

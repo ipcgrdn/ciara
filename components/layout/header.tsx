@@ -26,7 +26,6 @@ export default function Header() {
     { name: "소개", href: "#about" },
     { name: "기능", href: "#features" },
     { name: "가격", href: "#pricing" },
-    { name: "문의", href: "https://open.kakao.com/o/gtiAgUGh" },
   ];
 
   return (
