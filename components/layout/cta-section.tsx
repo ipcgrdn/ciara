@@ -103,7 +103,7 @@ export default function CTASection() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="이메일을 입력하세요"
-              className="flex-1 rounded-lg border-2 border-[#3c3c3c] bg-transparent text-white placeholder-white placeholder:opacity-50 px-4 py-3 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-white transition-all hidden"
+              className="flex-1 rounded-lg border-2 border-[#3c3c3c] bg-transparent text-white placeholder-white placeholder:opacity-50 px-4 py-3 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-white transition-all"
               style={{
                 fontSize: "clamp(0.4rem, 2vw, 1.2rem)",
                 lineHeight: "1.5",
@@ -132,7 +132,7 @@ export default function CTASection() {
             className="w-full max-w-xs sm:max-w-xl"
           >
             <Button
-              className="bg-[#a3cbff] hover:bg-[#8bb8ff] text-black font-semibold border-2 border-[#3c3c3c] transition-all duration-300 hover:scale-105 font-montserrat rounded-lg sm:rounded-xl px-4 sm:px-6 lg:px-8 py-3 sm:py-4 lg:py-6 text-base sm:text-lg w-full mt-2"
+              className="bg-[#a3cbff] hover:bg-[#8bb8ff] text-black font-semibold border-2 border-[#3c3c3c] transition-all duration-300 hover:scale-105 font-montserrat rounded-lg sm:rounded-xl px-4 sm:px-6 lg:px-8 py-3 sm:py-4 lg:py-6 text-base sm:text-lg w-full mt-2 hidden"
               size="lg"
               style={{
                 fontSize: "clamp(0.4rem, 2vw, 1.2rem)",
