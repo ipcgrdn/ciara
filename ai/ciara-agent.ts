@@ -44,7 +44,6 @@ interface IntentAnalysis {
     | "improve_existing"
     | "general_guidance"
     | "unclear";
-  confidence: number;
 }
 
 interface ActionPlan {
@@ -147,8 +146,6 @@ Analyze the user's request across these dimensions:
    - improve_existing: Enhancing or modifying existing content
    - general_guidance: Seeking advice or tips
    - unclear: Intent is ambiguous and needs clarification
-
-6. CONFIDENCE: How certain are you about this analysis (0-100)?
 </analysis_framework>
 
 <response_format>
@@ -159,7 +156,6 @@ Return ONLY a JSON object with this exact structure:
   "explicitNeeds": ["what", "they", "directly", "asked", "for"],
   "implicitNeeds": ["what", "they", "might", "also", "need"],
   "documentAction": "create_new|improve_existing|general_guidance|unclear",
-  "confidence": 85
 }
 </response_format>`;
 
@@ -199,7 +195,6 @@ Return ONLY a JSON object with this exact structure:
         explicitNeeds: [userMessage],
         implicitNeeds: [],
         documentAction: "unclear",
-        confidence: 50,
       };
     }
   }
@@ -227,7 +222,6 @@ Document State: ${
         ? JSON.stringify(context.currentDocumentState)
         : "No document"
     }
-Document ID: ${context.documentId || "None"}
 </current_context>
 
  <planning_rules>
@@ -238,7 +232,6 @@ Document ID: ${context.documentId || "None"}
  5. Always plan logically: structure before content, outline before details
  6. Consider user's implicit needs - if they want a "complete document", plan both index and content generation
  7. You can include multiple tools in toolsRequired array for comprehensive workflows
- 8. generateDocument no longer requires targetSection parameter - it processes all sections automatically
  </planning_rules>
 
 <available_tools>
